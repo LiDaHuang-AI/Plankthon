@@ -16,16 +16,16 @@ export default function ChallengeView() {
   const { state, updateState } = useAppContext();
   const router = useRouter();
   const lang = state?.settings?.language;
-  
+
   const challengeIndex = challenges.findIndex(c => c.id === challengeId);
   const challenge = challenges[challengeIndex];
-  
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const question = challenge?.questions?.[currentQuestionIndex] as Question | undefined;
-  
+
   const [code, setCode] = useState("");
   const [scrollTop, setScrollTop] = useState(0);
-  const [terminalLines, setTerminalLines] = useState<{text: string, type?: "default" | "error" | "success" | "command"}[]>([]);
+  const [terminalLines, setTerminalLines] = useState<{ text: string, type?: "default" | "error" | "success" | "command" }[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [testResult, setTestResult] = useState<boolean | null>(null);
 
@@ -36,7 +36,7 @@ export default function ChallengeView() {
   const [results, setResults] = useState<{ id: string; correct: boolean }[]>([]);
   const [startTime] = useState<Date>(new Date());
   const [showSummary, setShowSummary] = useState(false);
-  
+
   const { isReady, runCode } = usePyodide();
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function ChallengeView() {
 
   const getExplanation = () => {
     if (!question) return "";
-    
+
     // Use localized explanation if available
     const exp = lang === 'th' && question.explanation_th ? question.explanation_th : question.explanation;
     if (exp) return exp;
@@ -91,7 +91,7 @@ export default function ChallengeView() {
       setTerminalLines(prev => [...prev, { text: e.message, type: "error" }]);
     }
     setIsTyping(false);
-    setTestResult(null); 
+    setTestResult(null);
   };
 
   const handleCompleteQuestion = () => {
@@ -103,11 +103,11 @@ export default function ChallengeView() {
       updateState(prev => {
         const solved = new Set(prev.progress.challengesSolved);
         solved.add(challenge.id);
-        
+
         const unlocked = new Set(prev.progress.unlocked);
         const next = challenges[challengeIndex + 1];
         if (next) unlocked.add(next.id);
-        
+
         return {
           ...prev,
           progress: {
@@ -122,7 +122,7 @@ export default function ChallengeView() {
 
   const handleSubmit = async () => {
     if (!question || isSubmitted) return;
-    
+
     let correct = false;
 
     if (question.type === "multiple-choice") {
@@ -133,14 +133,14 @@ export default function ChallengeView() {
       if (!isReady) return;
       setIsTyping(true);
       setTerminalLines([{ text: "python -m pytest", type: "command" }]);
-      
+
       let allPassed = true;
       let failedCases = 0;
-      
+
       for (let i = 0; i < question.tests.length; i++) {
         const test = question.tests[i];
         try {
-          const wrappedCode = test.input ? 
+          const wrappedCode = test.input ?
             `\nimport sys, builtins\nclass MockInput:\n    def __init__(self, val):\n        self.val = val\n    def __call__(self, prompt=""):\n        return self.val\nbuiltins.input = MockInput(${JSON.stringify(test.input.trim())})\n${code}\n` : code;
 
           let fullOutput = "";
@@ -158,12 +158,12 @@ export default function ChallengeView() {
           setTerminalLines(prev => [...prev, { text: `test_${i} .......... [FAIL] (Error)`, type: "error" }]);
         }
       }
-      
+
       setTerminalLines(prev => [...prev, { text: `\n${question.tests.length - failedCases} passed, ${failedCases} failed` }]);
       correct = allPassed;
       setIsTyping(false);
     }
-    
+
     setTestResult(correct);
     setIsSubmitted(true);
     setResults(prev => [...prev, { id: question.id, correct }]);
@@ -181,7 +181,7 @@ export default function ChallengeView() {
               {code.split('\n').map((_, i) => <div key={i}>{i + 1}</div>)}
             </div>
           </div>
-          <textarea 
+          <textarea
             value={code}
             onChange={(e) => setCode(e.target.value)}
             onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
@@ -190,10 +190,10 @@ export default function ChallengeView() {
             readOnly={isSubmitted}
           />
         </div>
-        
+
         <div className="bg-surface border-t border-border p-4 flex flex-col gap-4">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={handleRun}
               disabled={!isReady || isSubmitted}
               className="px-6 py-2 bg-transparent border border-border text-text rounded-xl hover:bg-border transition-colors font-semibold disabled:opacity-50"
@@ -201,7 +201,7 @@ export default function ChallengeView() {
               {t(lang, 'run')}
             </button>
             {!isSubmitted && (
-              <button 
+              <button
                 onClick={handleSubmit}
                 disabled={!isReady}
                 className="px-8 py-2 bg-accent text-bg font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
@@ -210,7 +210,7 @@ export default function ChallengeView() {
               </button>
             )}
           </div>
-          
+
           {isSubmitted && (
             <div className="flex flex-col gap-4 animate-in fade-in">
               <div className="flex items-center gap-4">
@@ -241,7 +241,7 @@ export default function ChallengeView() {
 
       {/* Terminal */}
       <div className="h-48">
-        <Terminal 
+        <Terminal
           lines={terminalLines}
           prompt=""
           isTyping={isTyping}
@@ -253,7 +253,7 @@ export default function ChallengeView() {
   const renderSimpleQuestionControls = () => (
     <div className="mt-8 pt-6 border-t border-border flex flex-col gap-4">
       {!isSubmitted ? (
-        <button 
+        <button
           onClick={handleSubmit}
           className="px-8 py-2 bg-accent text-bg font-bold rounded-xl hover:opacity-90 transition-opacity self-start"
         >
@@ -291,7 +291,7 @@ export default function ChallengeView() {
     <div className="flex flex-col gap-4 flex-1">
       <div className="bg-surface-2 border border-border rounded-2xl p-6 flex flex-col flex-1">
         <div className="space-y-3 mt-4">
-          {q.options.map((opt: string, i: number) => (
+          {(lang === 'th' && q.options_th ? q.options_th : q.options).map((opt: string, i: number) => (
             <button
               key={i}
               onClick={() => !isSubmitted && setSelectedOption(i)}
@@ -354,19 +354,19 @@ export default function ChallengeView() {
       {/* Header */}
       <header className="p-6 flex justify-between items-start flex-shrink-0">
         <div>
-          <div className="text-text mb-2 font-mono text-[14px]">
-            Plankthon\\Home\\Challenge\\Level {challenge.chapter}\\ {challenge.title}
+          <div className="text-muted mb-2 font-mono text-[14px]">
+            Plankthon\Home\Challenge\Level {challenge.chapter}\ {lang === 'th' && challenge.title_th ? challenge.title_th : challenge.title}
           </div>
           <h1 className="text-3xl font-bold text-text mb-2">
-            Challenge {(challengeIndex + 1).toString().padStart(2, '0')} — {challenge.title}
+            Challenge {(challengeIndex + 1).toString().padStart(2, '0')} — {lang === 'th' && challenge.title_th ? challenge.title_th : challenge.title}
           </h1>
           <div className="text-muted text-sm">
             {t(lang, 'question')} {Math.min(currentQuestionIndex + 1, challenge.questions.length)} {t(lang, 'of')} {challenge.questions.length}
           </div>
           <div className="w-64 h-1 mt-4 bg-surface-2 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-accent rounded-full transition-all duration-500" 
-              style={{ width: `${Math.max(5, (currentQuestionIndex / challenge.questions.length) * 100)}%` }} 
+            <div
+              className="h-full bg-accent rounded-full transition-all duration-500"
+              style={{ width: `${Math.max(5, (currentQuestionIndex / challenge.questions.length) * 100)}%` }}
             />
           </div>
         </div>
@@ -383,7 +383,7 @@ export default function ChallengeView() {
             <div className="bg-surface-2 border border-border rounded-2xl p-6 flex flex-col font-mono text-[13px] overflow-y-auto">
               <div className="text-accent font-bold mb-4">// {t(lang, 'question').toUpperCase()} {currentQuestionIndex + 1}</div>
               <h2 className="text-text font-sans font-bold text-xl mb-6">{lang === 'th' && question.prompt_th ? question.prompt_th : question.prompt}</h2>
-              
+
               {question.type === "coding" && (
                 <>
                   <div className="bg-screen border border-border rounded-xl p-4 mb-6">
@@ -393,7 +393,7 @@ export default function ChallengeView() {
 
                   <div className="text-accent font-bold mb-4">// {t(lang, 'rules')}</div>
                   <ul className="text-text space-y-2 mb-8">
-                    {question.rules.map((r: string, i: number) => (
+                    {(lang === 'th' && (question as any).rules_th ? (question as any).rules_th : question.rules).map((r: string, i: number) => (
                       <li key={i}>- {r}</li>
                     ))}
                   </ul>
@@ -423,8 +423,8 @@ export default function ChallengeView() {
               <CheckCircle className="w-10 h-10 text-bg" />
             </div>
             <h2 className="text-3xl font-bold text-text mb-2">{t(lang, 'challengeComplete')}</h2>
-            <p className="text-muted mb-8">{challenge.title}</p>
-            
+            <p className="text-muted mb-8">{lang === 'th' && challenge.title_th ? challenge.title_th : challenge.title}</p>
+
             <div className="w-full grid grid-cols-2 gap-4 mb-8">
               <div className="bg-surface border border-border rounded-2xl p-4 flex flex-col items-center">
                 <span className="text-3xl font-bold text-c-string mb-1">{results.filter(r => r.correct).length}</span>
@@ -441,7 +441,7 @@ export default function ChallengeView() {
                 <span className="text-muted text-xs uppercase tracking-wider font-bold">{t(lang, 'timeTaken')}</span>
               </div>
             </div>
-            
+
             <button
               onClick={() => router.push('/challenge')}
               className="w-full py-4 bg-accent text-bg font-bold text-lg rounded-xl hover:opacity-90 transition-opacity"

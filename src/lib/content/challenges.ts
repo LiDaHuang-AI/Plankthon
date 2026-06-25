@@ -15,6 +15,7 @@ export type BaseQuestion = {
 export type MultipleChoiceQuestion = BaseQuestion & {
   type: "multiple-choice";
   options: string[];
+  options_th?: string[];
   correctIndex: number;
 };
 
@@ -28,6 +29,7 @@ export type CodingQuestion = BaseQuestion & {
   expectedOutput: string;
   initialCode?: string;
   rules: string[];
+  rules_th?: string[];
   tests: {
     input?: string;
     assertStdout: string;
@@ -40,6 +42,7 @@ export type Challenge = {
   id: string;
   chapter: number;
   title: string;
+  title_th?: string;
   questions: Question[];
 };
 

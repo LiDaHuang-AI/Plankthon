@@ -12,6 +12,7 @@ export default function ChallengeListing() {
   const router = useRouter();
   const [inputValue, setInputValue] = useState("");
   const [history, setHistory] = useState<{text: string, type: "command" | "error"}[]>([]);
+  const lang = state?.settings?.language || 'en';
 
   const levels = [1, 2, 3];
 

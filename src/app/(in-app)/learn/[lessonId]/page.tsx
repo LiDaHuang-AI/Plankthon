@@ -95,7 +95,7 @@ export default function LessonView() {
       {/* Header */}
       <header className="p-6 flex justify-between items-start">
         <div>
-          <div className="text-text mb-2 font-mono text-[14px]">
+          <div className="text-muted mb-2 font-mono text-[14px]">
             Plankthon\Home\Learn\Chapter {lesson.chapter}\ {lesson.title}
           </div>
           <h1 className="text-3xl font-bold text-text mb-2">

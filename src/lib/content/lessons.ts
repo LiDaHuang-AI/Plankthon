@@ -23,6 +23,7 @@ export type Lesson = {
   id: string;
   chapter: number;
   title: string;
+  title_th?: string;
   pages: LessonPage[];
 };
 

@@ -4,7 +4,7 @@ export const chapter1: Lesson[] = [
   {
     id: "ch1-basic",
     chapter: 1,
-    title: "Basic",
+    title: "Basic", title_th: "พื้นฐาน",
     pages: [
       {
         title: "Displaying Output",
@@ -45,7 +45,7 @@ export const chapter1: Lesson[] = [
   {
     id: "ch1-strings",
     chapter: 1,
-    title: "Strings",
+    title: "Strings", title_th: "ข้อความ (Strings)",
     pages: [
       {
         title: "String Concatenation",
@@ -86,7 +86,7 @@ export const chapter1: Lesson[] = [
   {
     id: "ch1-variables",
     chapter: 1,
-    title: "Variables",
+    title: "Variables", title_th: "ตัวแปร (Variables)",
     pages: [
       {
         title: "Storing Data",
@@ -127,7 +127,7 @@ export const chapter1: Lesson[] = [
   {
     id: "ch1-numbers",
     chapter: 1,
-    title: "Numbers & Operators",
+    title: "Numbers & Operators", title_th: "ตัวเลขและตัวดำเนินการ",
     pages: [
       {
         title: "Math in Python",
@@ -209,7 +209,7 @@ export const chapter1: Lesson[] = [
   {
     id: "ch1-booleans",
     chapter: 1,
-    title: "Booleans",
+    title: "Booleans", title_th: "บูลีน (Booleans)",
     pages: [
       {
         title: "True and False",
@@ -250,7 +250,7 @@ export const chapter1: Lesson[] = [
   {
     id: "ch1-conditions",
     chapter: 1,
-    title: "Conditions",
+    title: "Conditions", title_th: "เงื่อนไข (Conditions)",
     pages: [
       {
         title: "The if Statement",
@@ -291,7 +291,7 @@ export const chapter1: Lesson[] = [
   {
     id: "ch1-loops",
     chapter: 1,
-    title: "Loops",
+    title: "Loops", title_th: "การวนลูป (Loops)",
     pages: [
       {
         title: "The for Loop",
@@ -332,7 +332,7 @@ export const chapter1: Lesson[] = [
   {
     id: "ch1-lists",
     chapter: 1,
-    title: "Lists",
+    title: "Lists", title_th: "ลิสต์ (Lists)",
     pages: [
       {
         title: "Creating Lists",
@@ -373,7 +373,7 @@ export const chapter1: Lesson[] = [
   {
     id: "ch1-functions",
     chapter: 1,
-    title: "Functions",
+    title: "Functions", title_th: "ฟังก์ชัน (Functions)",
     pages: [
       {
         title: "Defining Functions",
