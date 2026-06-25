@@ -13,7 +13,10 @@ type Tab = {
 export function Tabs({ tabs, defaultTab }: { tabs: Tab[]; defaultTab?: string }) {
   const [activeTab, setActiveTab] = useState(defaultTab || tabs[0].id);
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
+  const [contentHeight, setContentHeight] = useState<number | "auto">("auto");
+  
   const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  const contentRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     const activeIndex = tabs.findIndex((t) => t.id === activeTab);
@@ -23,6 +26,17 @@ export function Tabs({ tabs, defaultTab }: { tabs: Tab[]; defaultTab?: string })
         left: el.offsetLeft,
         width: el.offsetWidth,
       });
+    }
+    
+    const contentEl = contentRefs.current[activeIndex];
+    if (contentEl) {
+      setContentHeight(contentEl.offsetHeight);
+      
+      const ro = new ResizeObserver(() => {
+        setContentHeight(contentEl.offsetHeight);
+      });
+      ro.observe(contentEl);
+      return () => ro.disconnect();
     }
   }, [activeTab, tabs]);
 
@@ -54,7 +68,11 @@ export function Tabs({ tabs, defaultTab }: { tabs: Tab[]; defaultTab?: string })
         ))}
       </div>
       
-      <div className="relative overflow-hidden w-full h-[400px]">
+      <motion.div 
+        className="relative overflow-hidden w-full -mx-2 px-2"
+        animate={{ height: contentHeight }}
+        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+      >
         <motion.div
           className="flex items-start w-full"
           animate={{ x: `-${activeIndex * 100}%` }}
@@ -63,16 +81,19 @@ export function Tabs({ tabs, defaultTab }: { tabs: Tab[]; defaultTab?: string })
           {tabs.map((tab, idx) => (
             <div
               key={tab.id}
+              ref={(el) => {
+                contentRefs.current[idx] = el;
+              }}
               className={clsx(
-                "w-full flex-shrink-0 transition-all duration-500",
-                activeTab === tab.id ? "opacity-100 blur-none" : "opacity-50 blur-sm pointer-events-none"
+                "w-full flex-shrink-0 px-2 transition-all duration-500",
+                activeTab === tab.id ? "opacity-100 blur-none" : "opacity-0 blur-sm pointer-events-none"
               )}
             >
               {tab.content}
             </div>
           ))}
         </motion.div>
-      </div>
+      </motion.div>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useAppContext } from "../ClientProvider";
 import { FileTree, FileNode } from "@/components/ui/FileTree";
-import { Settings, User as UserIcon, Monitor, LogOut, ChevronRight } from "lucide-react";
+import { User as UserIcon, Monitor, LogOut, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -59,9 +59,6 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
       {!isFullscreen && (
         <header className="h-14 flex items-center justify-between px-4 bg-surface border-b border-border z-20">
           <div className="flex items-center gap-4">
-            <Link href="/settings" className="p-2 text-muted hover:text-white transition-colors">
-              <Settings className="w-5 h-5" />
-            </Link>
             <Link href="/home" className="w-10 h-10 bg-[#facc15] rounded-full flex items-center justify-center hover:opacity-90 transition-opacity">
               <svg viewBox="0 0 100 100" className="w-6 h-6">
                 <path d="M 35 35 L 50 50 L 35 65" fill="transparent" stroke="#171717" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
@@ -99,7 +96,7 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
                     </div>
                     <div>
                       <div className="font-semibold text-white">{state?.profile.name}</div>
-                      <div className="text-muted text-xs">{state?.profile.handle}</div>
+                      <div className="text-muted text-xs truncate max-w-[160px]">{state?.account?.email || "user@example.com"}</div>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 divide-x divide-border border-b border-border p-3 text-center">
