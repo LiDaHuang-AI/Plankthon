@@ -52,7 +52,7 @@ export function CodeBlock({
 
   return (
     <div className={clsx("rounded-xl border border-border bg-screen overflow-hidden flex flex-col font-mono text-[13px] leading-relaxed", className)}>
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-white/5">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-border">
         <div className="flex gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F56]" />
           <div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" />

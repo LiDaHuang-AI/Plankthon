@@ -2,8 +2,12 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { message } = await req.json();
+    const { message, language = 'en' } = await req.json();
     const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!message) {
+      return NextResponse.json({ error: "Message is required" }, { status: 400 });
+    }
 
     if (!apiKey) {
       // Mock mode
@@ -13,7 +17,7 @@ export async function POST(req: Request) {
     }
 
     const payload = {
-      contents: [{ parts: [{ text: `You are Plank AI, a friendly Python tutor. Reply concisely, prefer runnable Python in fenced code blocks. User message: ${message}` }] }],
+      contents: [{ parts: [{ text: `You are Plank AI, a friendly Python tutor. The user's language preference is ${language}. Reply concisely in their preferred language. Always prefer runnable Python in fenced code blocks. Keep code and technical terms in English. User message: ${message}` }] }],
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 500,

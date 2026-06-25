@@ -39,9 +39,40 @@
   --c-danger: #FF6B6B;
 }
 
+.light {
+  --bg: #F0F4F8;
+  --surface: #FFFFFF;
+  --surface-2: #E1E8F0;
+  --screen: #E8EEF4;
+  --border: #D1D9E0;
+  --border-2: #BFC8D2;
+  --accent: #E5A800;
+  --text: #1B2129;
+  --muted: #5C6773;
+  
+  /* code syntax - light */
+  --c-keyword: #D07B00;
+  --c-string: #158E29;
+  --c-key: #006AB1;
+  --c-number: #D05E00;
+  --c-comment: #008000;
+  --c-danger: #D32F2F;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-geist-sans), sans-serif;
   overflow: hidden; /* Often good for a full app shell, will customize per layout */
+}
+
+/* Hide scrollbars globally for a cleaner look */
+::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+  background: transparent;
+}
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }

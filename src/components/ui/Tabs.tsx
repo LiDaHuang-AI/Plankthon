@@ -44,9 +44,9 @@ export function Tabs({ tabs, defaultTab }: { tabs: Tab[]; defaultTab?: string })
 
   return (
     <div className="w-full flex flex-col">
-      <div className="relative flex p-1.5 bg-black/30 rounded-2xl mb-6 border border-white/5">
+      <div className="relative flex p-1.5 bg-surface-2 rounded-2xl mb-6 border border-border">
         <motion.div
-          className="absolute top-1.5 bottom-1.5 bg-white/10 border border-white/5 rounded-xl shadow-md z-0"
+          className="absolute top-1.5 bottom-1.5 bg-border border border-border rounded-xl shadow-md z-0"
           initial={false}
           animate={{ left: indicatorStyle.left, width: indicatorStyle.width }}
           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
@@ -60,7 +60,7 @@ export function Tabs({ tabs, defaultTab }: { tabs: Tab[]; defaultTab?: string })
             onClick={() => setActiveTab(tab.id)}
             className={clsx(
               "flex-1 relative z-10 px-4 py-2.5 text-sm font-medium transition-colors rounded-xl",
-              activeTab === tab.id ? "text-white" : "text-muted hover:text-gray-300"
+              activeTab === tab.id ? "text-text" : "text-muted hover:text-text"
             )}
           >
             {tab.label}

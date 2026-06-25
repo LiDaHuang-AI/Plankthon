@@ -7,18 +7,80 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import clsx from "clsx";
+import { lessons } from "@/lib/content/lessons";
 
 export default function InAppLayout({ children }: { children: React.ReactNode }) {
   const { state, updateState } = useAppContext();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(256);
+  const [isResizing, setIsResizing] = useState(false);
+  const [confirmNode, setConfirmNode] = useState<FileNode | null>(null);
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      // Limit the width between 200px and 600px
+      const newWidth = Math.min(Math.max(e.clientX, 200), 600);
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
 
   useEffect(() => {
     if (state && !state.loggedIn) {
       router.push("/auth");
     }
   }, [state?.loggedIn, router]);
+
+  const chapters = Array.from(new Set(lessons.map(l => l.chapter))).sort((a, b) => a - b);
+
+  const learnChildren: FileNode[] = chapters.map(chapterNum => {
+    return {
+      name: `Chapter ${chapterNum}`,
+      type: "folder",
+      path: `/learn/chapter-${chapterNum}`,
+      children: lessons.filter(l => l.chapter === chapterNum).map(l => {
+        let status: "completed" | "locked" | "available" = "locked";
+        if (state?.progress.lessonsCompleted.includes(l.id)) {
+          status = "completed";
+        } else if (state?.progress.unlocked.includes(l.id) || state?.isAdmin) {
+          status = "available";
+        }
+        return { name: l.title + ".lesson", type: "file", path: `/learn/${l.id}`, status };
+      })
+    };
+  });
+
+  const challengeChildren: FileNode[] = chapters.map(chapterNum => {
+    return {
+      name: `Level ${chapterNum}`,
+      type: "folder",
+      path: `/challenge/level-${chapterNum}`,
+      children: lessons.filter(l => l.chapter === chapterNum).map(l => {
+        let status: "completed" | "locked" | "available" = "locked";
+        if (state?.progress.challengesSolved?.includes(l.id)) {
+          status = "completed";
+        } else if (state?.progress.unlocked.includes(l.id) || state?.isAdmin) {
+          status = "available";
+        }
+        return { name: l.title + ".Challenge", type: "file", path: `/challenge/${l.id}`, status };
+      })
+    };
+  });
 
   const fileTreeData: FileNode[] = [
     {
@@ -29,10 +91,20 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
         {
           name: "Home",
           type: "folder",
-          path: "/home-root",
+          path: "/home",
           children: [
-            { name: "Challenge", type: "file", path: "/challenge" },
-            { name: "Learn", type: "file", path: "/learn" },
+            {
+              name: "Learn",
+              type: "folder",
+              path: "/learn",
+              children: learnChildren
+            },
+            {
+              name: "Challenge",
+              type: "folder",
+              path: "/challenge",
+              children: challengeChildren
+            },
             { name: "Coding", type: "file", path: "/coding" },
             { name: "Planky", type: "file", path: "/planky" },
           ]
@@ -40,6 +112,17 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
       ]
     }
   ];
+
+  const handleFileSelect = (node: FileNode) => {
+    if (node.path === "/root") return;
+    if (node.name.startsWith("Chapter ") || node.name.startsWith("Level ")) return;
+
+    if (node.name.endsWith(".lesson") || node.name.endsWith(".Challenge")) {
+      setConfirmNode(node);
+    } else {
+      router.push(node.path);
+    }
+  };
 
   const handleLogout = () => {
     updateState(prev => ({ ...prev, loggedIn: false, account: null }));
@@ -95,7 +178,7 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
                       {initials}
                     </div>
                     <div>
-                      <div className="font-semibold text-white">{state?.profile.name}</div>
+                      <div className="font-semibold text-text">{state?.profile.name}</div>
                       <div className="text-muted text-xs truncate max-w-[160px]">{state?.account?.email || "user@example.com"}</div>
                     </div>
                   </div>
@@ -105,24 +188,24 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
                       <div className="text-[10px] text-muted">challenges</div>
                     </div>
                     <div>
-                      <div className="text-white font-semibold">{state?.progress.lessonsCompleted.length}</div>
+                      <div className="text-text font-semibold">{state?.progress.lessonsCompleted.length}</div>
                       <div className="text-[10px] text-muted">lessons</div>
                     </div>
                     <div>
-                      <div className="text-white font-semibold">{state?.progress.accuracy}%</div>
+                      <div className="text-text font-semibold">{state?.progress.accuracy}%</div>
                       <div className="text-[10px] text-muted">accuracy</div>
                     </div>
                   </div>
                   <div className="flex flex-col p-2">
-                    <Link href="#" className="px-3 py-2 text-accent bg-white/5 rounded-md flex justify-between items-center group">
+                    <Link href="#" className="px-3 py-2 text-accent bg-border rounded-md flex justify-between items-center group">
                       <span>View profile</span>
                       <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100" />
                     </Link>
-                    <Link href="#" className="px-3 py-2 text-muted hover:text-white rounded-md flex justify-between items-center group transition-colors">
+                    <Link href="#" className="px-3 py-2 text-muted hover:text-text rounded-md flex justify-between items-center group transition-colors">
                       <span>Edit profile</span>
                       <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100" />
                     </Link>
-                    <Link href="/settings" className="px-3 py-2 text-muted hover:text-white rounded-md flex justify-between items-center group transition-colors">
+                    <Link href="/settings" className="px-3 py-2 text-muted hover:text-text rounded-md flex justify-between items-center group transition-colors">
                       <span>Settings</span>
                       <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100" />
                     </Link>
@@ -143,10 +226,25 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar - hidden on fullscreen */}
         {!isFullscreen && (
-          <aside className="w-64 flex-shrink-0 bg-surface border-r border-border hidden md:flex flex-col">
+          <aside 
+            className="flex-shrink-0 bg-surface hidden md:flex flex-col relative select-none border-r border-border"
+            style={{ width: sidebarWidth }}
+          >
             <div className="p-4 flex-1 overflow-y-auto">
-              <FileTree data={fileTreeData} />
+              <FileTree data={fileTreeData} onSelect={handleFileSelect} />
             </div>
+            
+            {/* Splitter Bar */}
+            <div
+              className={clsx(
+                "absolute top-0 -right-1 bottom-0 w-2 cursor-col-resize z-50 transition-colors",
+                isResizing ? "bg-accent/20" : "hover:bg-accent/20"
+              )}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setIsResizing(true);
+              }}
+            />
           </aside>
         )}
 
@@ -155,6 +253,35 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
           {children}
         </main>
       </div>
+
+      {/* Custom Run Confirm Modal */}
+      {confirmNode && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-surface-2 backdrop-blur-sm p-4">
+          <div className="bg-surface-2 border border-border p-6 rounded-2xl shadow-2xl max-w-sm w-full">
+            <h3 className="text-xl font-bold text-text mb-2">Run File</h3>
+            <p className="text-muted mb-8 text-[15px]">
+              Do you want to run <span className="text-accent font-mono">{confirmNode.name}</span>?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button 
+                onClick={() => setConfirmNode(null)}
+                className="px-5 py-2 rounded-lg font-medium text-muted hover:text-text hover:bg-border transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  router.push(confirmNode.path);
+                  setConfirmNode(null);
+                }}
+                className="px-5 py-2 rounded-lg font-bold bg-accent text-bg hover:opacity-90 transition-opacity shadow-[0_0_15px_rgba(255,212,59,0.2)]"
+              >
+                Run
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

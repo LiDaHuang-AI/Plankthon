@@ -5,7 +5,11 @@ import { chapter3 } from "./challenges/chapter3";
 export type BaseQuestion = {
   id: string;
   prompt: string;
+  prompt_th?: string;
   hint: string;
+  hint_th?: string;
+  explanation?: string;
+  explanation_th?: string;
 };
 
 export type MultipleChoiceQuestion = BaseQuestion & {

@@ -34,9 +34,11 @@ export function Terminal({
   }, [waitingForInput]);
 
   return (
-    <div className={clsx("font-mono text-[13px] flex flex-col h-full bg-screen border border-border rounded-xl overflow-hidden", className)}>
-      <div className="px-4 py-2 border-b border-white/5 bg-white/5 text-xs text-muted font-sans uppercase tracking-wider flex items-center justify-between">
-        <span>Terminal</span>
+    <div className={clsx("font-mono text-[13px] flex flex-col h-full bg-bg border border-border overflow-hidden", className)}>
+      <div className="px-4 py-2 border-b border-border bg-surface text-xs text-muted font-sans font-semibold tracking-wider flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span>TERMINAL</span>
+        </div>
       </div>
       
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-1">

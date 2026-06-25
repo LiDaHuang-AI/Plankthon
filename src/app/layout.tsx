@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   description: "Level up your Python, one line at a time.",
 };
 
+import { CursorProvider, Cursor } from "@/components/ui/cursor";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -26,9 +28,14 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-bg text-text h-screen w-screen overflow-hidden selection:bg-accent/30`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-bg text-text h-screen w-screen overflow-hidden selection:bg-accent/30 cursor-none`}
       >
-        <ClientProvider>{children}</ClientProvider>
+        <ClientProvider>
+          <CursorProvider global className="h-full w-full">
+            <Cursor />
+            {children}
+          </CursorProvider>
+        </ClientProvider>
       </body>
     </html>
   );

@@ -15,7 +15,7 @@ export function Toggle({
   className?: string;
 }) {
   return (
-    <div className={clsx("flex items-center gap-3 font-mono text-[14px]", className)}>
+    <div className={clsx("flex items-center p-1 bg-surface-2 border border-border rounded-lg w-max", className)}>
       {options.map((opt) => {
         const isActive = value === opt.value;
         return (
@@ -23,11 +23,13 @@ export function Toggle({
             key={opt.value}
             onClick={() => onChange(opt.value)}
             className={clsx(
-              "transition-colors",
-              isActive ? "text-accent" : "text-muted hover:text-text"
+              "px-4 py-1.5 rounded-md transition-all duration-200 font-mono text-[13px] outline-none",
+              isActive 
+                ? "text-bg bg-accent shadow-[0_0_10px_var(--color-accent)] font-bold" 
+                : "text-muted hover:text-text hover:bg-surface"
             )}
           >
-            {isActive ? `[ ${opt.label} ]` : opt.label}
+            {opt.label}
           </button>
         );
       })}

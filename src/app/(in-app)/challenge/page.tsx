@@ -22,7 +22,7 @@ export default function ChallengeListing() {
   return (
     <div className="p-6 md:p-8 font-mono text-[13px]">
       <div className="mb-4">
-        <span className="text-white">Plankthon [Version 1.0.0]</span>
+        <span className="text-text">Plankthon [Version 1.0.0]</span>
       </div>
 
       <div className="space-y-4">
@@ -32,7 +32,7 @@ export default function ChallengeListing() {
 
           return (
             <div key={level}>
-              <div className="text-white mb-2">Plankthon\Home\Challenge\Level {level}</div>
+              <div className="text-text mb-2">Plankthon\Home\Challenge\Level {level}</div>
               <div className="space-y-1">
                 {levelChallenges.map(challenge => {
                   const challengeIndex = challenges.findIndex(c => c.id === challenge.id);
@@ -73,7 +73,7 @@ export default function ChallengeListing() {
         {history.length > 0 && (
           <div className="flex flex-col space-y-1 font-mono text-[13px]">
             {history.map((line, i) => (
-              <div key={i} className={line.type === "error" ? "text-c-danger" : "text-white"}>
+              <div key={i} className={line.type === "error" ? "text-c-danger" : "text-text"}>
                 {line.text}
               </div>
             ))}
@@ -81,7 +81,7 @@ export default function ChallengeListing() {
         )}
 
         <form
-          className="flex items-center gap-2 text-white"
+          className="flex items-center gap-2 text-text"
           onSubmit={(e) => {
             e.preventDefault();
             const cmd = inputValue.trim();
@@ -111,7 +111,7 @@ export default function ChallengeListing() {
             type="text"
             value={inputValue}
             onChange={e => setInputValue(e.target.value)}
-            className="bg-transparent border-none outline-none text-white font-mono flex-1 caret-accent"
+            className="bg-transparent border-none outline-none text-text font-mono flex-1 caret-accent"
             autoFocus
             spellCheck={false}
             autoComplete="off"

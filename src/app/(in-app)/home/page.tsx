@@ -28,7 +28,7 @@ export default function HomePage() {
           {state?.profile.name ? state.profile.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : "U"}
         </div>
         <div className="flex flex-col z-10">
-          <h1 className="text-3xl font-bold text-white mb-1 tracking-tight">{state?.profile.name || "New User"}</h1>
+          <h1 className="text-3xl font-bold text-text mb-1 tracking-tight">{state?.profile.name || "New User"}</h1>
           <div className="flex items-center gap-3 text-sm mt-1">
             <span className="text-accent font-medium px-2.5 py-1 bg-accent/10 rounded-md border border-accent/20 shadow-sm">{state?.account?.email || "user@example.com"}</span>
           </div>
@@ -40,7 +40,7 @@ export default function HomePage() {
         <div className="col-span-1 md:col-span-2 bg-surface-2 border border-border rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden group">
           <div className="absolute -right-12 -top-12 w-48 h-48 bg-accent/10 rounded-full blur-3xl group-hover:bg-accent/20 transition-all duration-700" />
           <div>
-            <h2 className="text-xl font-bold text-white mb-2">Continue Learning</h2>
+            <h2 className="text-xl font-bold text-text mb-2">Continue Learning</h2>
             <p className="text-muted text-sm max-w-md">
               You are currently on Chapter {nextLesson.chapter}. Next up is <span className="text-accent font-medium">{nextLesson.title}</span>.
             </p>
@@ -51,7 +51,7 @@ export default function HomePage() {
                 <span>Chapter {nextLesson.chapter} Progress</span>
                 <span>{progressPct}%</span>
               </div>
-              <div className="h-1.5 w-full bg-black/50 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-surface-2 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-accent rounded-full" 
                   style={{ width: `${progressPct}%` }} 
@@ -69,32 +69,32 @@ export default function HomePage() {
         </div>
 
         {/* Quick Action Tiles */}
-        <Link href="/learn" className="bg-surface-2 border border-border rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:bg-white/5 hover:border-white/10 transition-all group">
+        <Link href="/learn" className="bg-surface-2 border border-border rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:bg-border hover:border-border transition-all group">
           <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:scale-110 group-hover:bg-blue-500/20 transition-all duration-300">
             <BookOpen className="w-6 h-6" />
           </div>
-          <span className="font-semibold text-white">Learn</span>
+          <span className="font-semibold text-text">Learn</span>
         </Link>
 
-        <Link href="/challenge" className="bg-surface-2 border border-border rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:bg-white/5 hover:border-white/10 transition-all group">
+        <Link href="/challenge" className="bg-surface-2 border border-border rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:bg-border hover:border-border transition-all group">
           <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:scale-110 group-hover:bg-purple-500/20 transition-all duration-300">
             <Trophy className="w-6 h-6" />
           </div>
-          <span className="font-semibold text-white">Challenge</span>
+          <span className="font-semibold text-text">Challenge</span>
         </Link>
 
-        <Link href="/coding" className="bg-surface-2 border border-border rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:bg-white/5 hover:border-white/10 transition-all group">
+        <Link href="/coding" className="bg-surface-2 border border-border rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:bg-border hover:border-border transition-all group">
           <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-400 group-hover:scale-110 group-hover:bg-green-500/20 transition-all duration-300">
             <Code className="w-6 h-6" />
           </div>
-          <span className="font-semibold text-white">Coding Sandbox</span>
+          <span className="font-semibold text-text">Coding Sandbox</span>
         </Link>
 
-        <Link href="/planky" className="bg-surface-2 border border-border rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:bg-white/5 hover:border-white/10 transition-all group">
+        <Link href="/planky" className="bg-surface-2 border border-border rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:bg-border hover:border-border transition-all group">
           <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center text-accent group-hover:scale-110 group-hover:bg-accent/20 transition-all duration-300">
             <TerminalIcon className="w-6 h-6" />
           </div>
-          <span className="font-semibold text-white">Plank AI</span>
+          <span className="font-semibold text-text">Plank AI</span>
         </Link>
       </div>
 

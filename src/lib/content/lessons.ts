@@ -4,15 +4,19 @@ import { chapter3 } from "./lessons/chapter3";
 
 export type LessonPage = {
   title: string;
+  title_th?: string;
   explanation: string;
+  explanation_th?: string;
   exampleCode?: string;
   expectedOutput?: string;
   exercise?: {
     prompt: string;
+    prompt_th?: string;
     starter: string;
     check: string;
   };
   hint?: string;
+  hint_th?: string;
 };
 
 export type Lesson = {

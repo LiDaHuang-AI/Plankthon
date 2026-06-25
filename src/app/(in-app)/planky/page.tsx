@@ -69,7 +69,7 @@ export default function PlankyChat() {
       const res = await fetch("/api/planky", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg.text })
+        body: JSON.stringify({ message: userMsg.text, language: state?.settings?.language || "en" })
       });
       const data = await res.json();
       
@@ -102,17 +102,17 @@ export default function PlankyChat() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#0a0a0a] text-[#8a8a8a] font-mono text-[13px] p-6 pt-8">
-      <div className="flex-1 flex flex-col border border-[#3b82f6] rounded relative shadow-2xl">
+    <div className="w-full h-full flex flex-col bg-surface text-muted font-mono text-[13px] p-6 pt-8">
+      <div className="flex-1 flex flex-col border border-accent rounded relative shadow-2xl">
         {/* Border Title */}
-        <div className="absolute -top-[10px] left-6 px-2 bg-[#0a0a0a] text-[#3b82f6] tracking-wider text-sm flex items-center gap-2">
+        <div className="absolute -top-[10px] left-6 px-2 bg-surface text-accent tracking-wider text-sm flex items-center gap-2">
           Planky Code v1.0.0
         </div>
 
         {/* Top Banner Area */}
-        <div className="flex flex-col md:flex-row border-b border-[#3b82f6]">
+        <div className="flex flex-col md:flex-row border-b border-accent">
           {/* Left Column */}
-          <div className="flex-1 p-6 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-[#3b82f6]">
+          <div className="flex-1 p-6 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-accent">
             <div className="text-center mb-4">Welcome back {state?.profile?.name || "User"}!</div>
             
             <svg viewBox="0 0 100 100" className="w-16 h-16 my-2">
@@ -126,15 +126,15 @@ export default function PlankyChat() {
 
           {/* Right Column */}
           <div className="flex-1 flex flex-col">
-            <div className="p-4 border-b border-[#3b82f6] flex-1 flex flex-col justify-center">
-              <div className="text-[#3b82f6] mb-2">Tips for getting started</div>
+            <div className="p-4 border-b border-accent flex-1 flex flex-col justify-center">
+              <div className="text-accent mb-2">Tips for getting started</div>
               <div className="opacity-80 leading-relaxed text-[12px] flex flex-col gap-1">
-                <div>| Run <span className="text-white">/help</span> to see available commands for Planky.</div>
+                <div>| Run <span className="text-text">/help</span> to see available commands for Planky.</div>
                 <div>| Note: You can run generated Python code directly in your browser.</div>
               </div>
             </div>
             <div className="p-4 flex-1 flex flex-col justify-center">
-              <div className="text-[#3b82f6] mb-2">What's new</div>
+              <div className="text-accent mb-2">What's new</div>
               <div className="opacity-80 leading-relaxed text-[12px] flex flex-col gap-1">
                 <div>| Added Terminal Theme inspired by Claude Code.</div>
                 <div>| Improved python code execution.</div>
@@ -148,11 +148,11 @@ export default function PlankyChat() {
           {messages.map((msg) => (
             <div key={msg.id} className="flex flex-col gap-1">
               {msg.role === "you" ? (
-                <div className="text-white font-bold opacity-80 flex items-center gap-2">
-                  <span className="text-[#3b82f6]">&gt;</span> {msg.text}
+                <div className="text-text font-bold opacity-80 flex items-center gap-2">
+                  <span className="text-accent">&gt;</span> {msg.text}
                 </div>
               ) : (
-                <div className="pl-4 border-l-2 border-[#3b82f6]/30 py-2 flex flex-col gap-3">
+                <div className="pl-4 border-l-2 border-accent/30 py-2 flex flex-col gap-3">
                   {msg.text && (
                     <div className="whitespace-pre-wrap leading-relaxed">
                       {msg.text}
@@ -160,31 +160,31 @@ export default function PlankyChat() {
                   )}
 
                   {msg.code && (
-                    <div className="flex flex-col gap-2 mt-2 max-w-4xl bg-[#111] p-3 rounded border border-white/5">
+                    <div className="flex flex-col gap-2 mt-2 max-w-4xl bg-surface-2 p-3 rounded border border-border">
                       <CodeBlock code={msg.code} animateTyping={false} />
                       <div className="flex gap-4 mt-2">
                         <button 
                           onClick={() => navigator.clipboard.writeText(msg.code!)}
-                          className="text-[#3b82f6] hover:text-white transition-colors uppercase text-[10px] tracking-wider"
+                          className="text-accent hover:text-text transition-colors uppercase text-[10px] tracking-wider"
                         >
                           [ Copy ]
                         </button>
                         <button 
                           onClick={() => handleRunAction(msg.id, msg.code!)}
                           disabled={!isReady}
-                          className="text-[#3b82f6] hover:text-white transition-colors uppercase text-[10px] tracking-wider disabled:opacity-50"
+                          className="text-accent hover:text-text transition-colors uppercase text-[10px] tracking-wider disabled:opacity-50"
                         >
                           [ Run ]
                         </button>
                         <button 
                           onClick={() => handleInsertAction(msg.code!)}
-                          className="text-[#3b82f6] hover:text-white transition-colors uppercase text-[10px] tracking-wider"
+                          className="text-accent hover:text-text transition-colors uppercase text-[10px] tracking-wider"
                         >
                           [ Insert ]
                         </button>
                       </div>
                       {msg.output && (
-                        <div className="bg-black border border-[#3b82f6]/30 p-2 text-[#8a8a8a] mt-2 font-mono text-xs">
+                        <div className="bg-surface-2 border border-accent/30 p-2 text-muted mt-2 font-mono text-xs">
                           {msg.output}
                         </div>
                       )}
@@ -196,25 +196,25 @@ export default function PlankyChat() {
           ))}
 
           {isLoading && (
-            <div className="pl-4 border-l-2 border-[#3b82f6]/30 py-2 flex items-center gap-2">
-              <span className="animate-pulse text-[#3b82f6]">Planky is typing...</span>
+            <div className="pl-4 border-l-2 border-accent/30 py-2 flex items-center gap-2">
+              <span className="animate-pulse text-accent">Planky is typing...</span>
             </div>
           )}
         </div>
 
         {/* Input Bar */}
         <form onSubmit={handleSend} className="p-4 flex items-center gap-3 relative">
-          <span className="text-[#3b82f6] font-bold">&gt;</span>
+          <span className="text-accent font-bold">&gt;</span>
           <input 
             type="text" 
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Try 'write a python script for...'"
-            className="flex-1 bg-transparent text-white outline-none font-mono placeholder:text-[#8a8a8a]/50"
+            className="flex-1 bg-transparent text-text outline-none font-mono placeholder:text-muted/50"
             autoComplete="off"
             autoFocus
           />
-          {isLoading && <span className="absolute right-4 text-[#3b82f6] animate-pulse">Running...</span>}
+          {isLoading && <span className="absolute right-4 text-accent animate-pulse">Running...</span>}
         </form>
       </div>
     </div>

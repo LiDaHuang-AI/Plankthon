@@ -7,12 +7,14 @@ import Link from "next/link";
 import { CodeBlock } from "@/components/ui/CodeBlock";
 import { useState, useEffect } from "react";
 import { usePyodide } from "@/lib/pyodide/client";
+import { t } from "@/lib/i18n";
 import clsx from "clsx";
 
 export default function LessonView() {
   const { lessonId } = useParams();
   const { state, updateState } = useAppContext();
   const router = useRouter();
+  const lang = state?.settings?.language;
   
   const lessonIndex = lessons.findIndex(l => l.id === lessonId);
   const lesson = lessons[lessonIndex];
@@ -43,9 +45,12 @@ export default function LessonView() {
   const handleRun = async () => {
     if (!isReady) return;
     try {
-      const res = await runCode(code);
-      setOutput(res);
-      if (page.exercise && res === page.exercise.check) {
+      let fullOutput = "";
+      await runCode(code, (text) => {
+        fullOutput += text;
+      });
+      setOutput(fullOutput);
+      if (page.exercise && fullOutput === page.exercise.check) {
         setIsSuccess(true);
       } else if (!page.exercise) {
         setIsSuccess(true); // Always succeed if no exercise
@@ -90,16 +95,16 @@ export default function LessonView() {
       {/* Header */}
       <header className="p-6 flex justify-between items-start">
         <div>
-          <div className="text-white mb-2 font-mono text-[14px]">
+          <div className="text-text mb-2 font-mono text-[14px]">
             Plankthon\Home\Learn\Chapter {lesson.chapter}\ {lesson.title}
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">
-            {page.title} <span className="text-muted text-xl">({currentPageIndex + 1}/{lesson.pages.length})</span>
+          <h1 className="text-3xl font-bold text-text mb-2">
+            {lang === 'th' && page.title_th ? page.title_th : page.title} <span className="text-muted text-xl">({currentPageIndex + 1}/{lesson.pages.length})</span>
           </h1>
           <div className="text-muted text-sm">
             Chapter {lesson.chapter}: {lesson.title}
           </div>
-          <div className="w-64 h-1 mt-4 bg-black/50 rounded-full overflow-hidden">
+          <div className="w-64 h-1 mt-4 bg-surface-2 rounded-full overflow-hidden">
             <div 
               className="h-full bg-accent rounded-full transition-all duration-500" 
               style={{ width: `${Math.max(5, progressPct)}%` }} 
@@ -113,13 +118,13 @@ export default function LessonView() {
         {/* LEARN Column */}
         <div className="bg-surface-2 border border-border rounded-2xl p-6 flex flex-col">
           <div className="font-mono text-accent font-bold text-[13px] mb-4">// LEARN</div>
-          <p className="text-white text-[15px] mb-6 whitespace-pre-wrap">{page.explanation}</p>
+          <p className="text-text text-[15px] mb-6 whitespace-pre-wrap">{lang === 'th' && page.explanation_th ? page.explanation_th : page.explanation}</p>
           
           {page.exampleCode && <CodeBlock code={page.exampleCode} />}
           
           {page.expectedOutput && (
             <div className="mt-4 bg-screen border border-border rounded-xl p-4 font-mono text-[13px]">
-              <div className="text-[10px] text-muted uppercase tracking-wider mb-2">Output</div>
+              <div className="text-[10px] text-muted uppercase tracking-wider mb-2">{t(lang, 'output')}</div>
               <div className="text-c-string whitespace-pre-wrap">{page.expectedOutput}</div>
             </div>
           )}
@@ -138,18 +143,18 @@ export default function LessonView() {
             
             {page.exercise ? (
               <>
-                <p className="text-white text-[14px] mb-4">{page.exercise.prompt}</p>
+                <p className="text-text text-[14px] mb-4">{lang === 'th' && page.exercise.prompt_th ? page.exercise.prompt_th : page.exercise.prompt}</p>
                 
                 <textarea 
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  className="w-full h-32 bg-screen border border-border rounded-xl p-4 text-white font-mono text-[13px] outline-none focus:border-accent resize-none"
+                  className="w-full h-32 bg-screen border border-border rounded-xl p-4 text-text font-mono text-[13px] outline-none focus:border-accent resize-none"
                   spellCheck={false}
                 />
               </>
             ) : (
               <>
-                <p className="text-white text-[14px] mb-4">Run the example code to see how it works!</p>
+                <p className="text-text text-[14px] mb-4">Run the example code to see how it works!</p>
                 <CodeBlock code={code} />
               </>
             )}
@@ -160,7 +165,7 @@ export default function LessonView() {
                 disabled={!isReady}
                 className="px-6 py-2 bg-accent text-bg font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                {isReady ? 'Run' : 'Loading...'}
+                {isReady ? t(lang, 'run') : t(lang, 'loading')}
               </button>
               <div className="flex-1 bg-screen border border-border rounded-xl p-3 font-mono text-[13px] min-h-[46px] flex items-center">
                 {output ? (
@@ -168,7 +173,7 @@ export default function LessonView() {
                     {output}
                   </span>
                 ) : (
-                  <span className="text-[10px] text-muted uppercase tracking-wider">Output</span>
+                  <span className="text-[10px] text-muted uppercase tracking-wider">{t(lang, 'output')}</span>
                 )}
               </div>
             </div>
@@ -184,10 +189,10 @@ export default function LessonView() {
             </div>
             <div>
               <div className="font-mono text-accent font-bold text-[11px] uppercase mb-1">Planky</div>
-              <p className="text-white text-[14px]">
-                {isSuccess === true ? "Nice work! Press 'Next' to continue." : 
-                 isSuccess === false ? "Not quite right. " + (page.hint || "Try again.") : 
-                 "Run your code to see the output here."}
+              <p className="text-text text-[14px]">
+                {isSuccess === true ? (lang === 'th' ? "เยี่ยมมาก! กด 'ถัดไป' เพื่อไปต่อ" : "Nice work! Press 'Next' to continue.") : 
+                 isSuccess === false ? (lang === 'th' ? "ยังไม่ถูกต้อง " + (page.hint_th || page.hint || "ลองอีกครั้ง") : "Not quite right. " + (page.hint || "Try again.")) : 
+                 (lang === 'th' ? "รันโค้ดของคุณเพื่อดูผลลัพธ์ที่นี่" : "Run your code to see the output here.")}
               </p>
             </div>
           </div>
@@ -198,7 +203,7 @@ export default function LessonView() {
       <footer className="fixed bottom-0 left-0 right-0 h-20 bg-surface border-t border-border flex items-center justify-between px-6 z-50">
         <Link 
           href="/learn"
-          className="px-6 py-2 bg-transparent border border-white/20 text-white rounded-xl hover:bg-white/5 transition-colors"
+          className="px-6 py-2 bg-transparent border border-border text-text rounded-xl hover:bg-border transition-colors"
         >
           Back to Menu
         </Link>
@@ -207,7 +212,7 @@ export default function LessonView() {
           disabled={isSuccess !== true}
           className="px-8 py-2 bg-accent text-bg font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          {currentPageIndex < lesson.pages.length - 1 ? "Next Page ->" : "Complete Lesson ->"}
+          {currentPageIndex < lesson.pages.length - 1 ? t(lang, 'next') : (lang === 'th' ? "เสร็จสิ้นบทเรียน ->" : "Complete Lesson ->")}
         </button>
       </footer>
     </div>
