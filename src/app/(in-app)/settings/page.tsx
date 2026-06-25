@@ -56,10 +56,10 @@ export default function SettingsPage() {
             </div>
             <div className="flex items-center">
               <div className="w-48 text-c-key">editor.font_size</div>
-              <Toggle 
-                options={[{ value: 12, label: "12px" }, { value: 14, label: "14px" }, { value: 16, label: "16px" }]}
-                value={state.settings.fontSize}
-                onChange={(val) => updateSetting("fontSize", val)}
+              <Toggle
+                options={[{ value: "12", label: "12px" }, { value: "14", label: "14px" }, { value: "16", label: "16px" }]}
+                value={String(state.settings.fontSize)}
+                onChange={(val) => updateSetting("fontSize", Number(val))}
               />
             </div>
           </div>
