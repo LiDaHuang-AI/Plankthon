@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-screen: var(--screen);
+  --color-border: var(--border);
+  --color-border-2: var(--border-2);
+  --color-accent: var(--accent);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+
+  --color-c-keyword: var(--c-keyword);
+  --color-c-string: var(--c-string);
+  --color-c-key: var(--c-key);
+  --color-c-number: var(--c-number);
+  --color-c-comment: var(--c-comment);
+  --color-c-danger: var(--c-danger);
+}
+
+:root {
+  --bg: #0E1117;
+  --surface: #161C26;
+  --surface-2: #1C2330;
+  --screen: #0B0F16;
+  --border: #2A3340;
+  --border-2: #3A4250;
+  --accent: #FFD43B;
+  --text: #E6EDF3;
+  --muted: #8B949E;
+  
+  /* code syntax */
+  --c-keyword: #FFD43B;
+  --c-string: #7EE787;
+  --c-key: #9CDCFE;
+  --c-number: #FFA657;
+  --c-comment: #6A9955;
+  --c-danger: #FF6B6B;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans), sans-serif;
+  overflow: hidden; /* Often good for a full app shell, will customize per layout */
+}
