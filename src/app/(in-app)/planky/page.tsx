@@ -66,10 +66,14 @@ export default function PlankyChat() {
     setIsLoading(true);
 
     try {
+      const history = messages.map(m => ({
+        role: m.role,
+        text: m.code ? `${m.text}\n\n\`\`\`python\n${m.code}\n\`\`\`` : m.text,
+      }));
       const res = await fetch("/api/planky", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg.text, language: state?.settings?.language || "en" })
+        body: JSON.stringify({ message: userMsg.text, history, language: state?.settings?.language || "en" })
       });
       const data = await res.json();
       

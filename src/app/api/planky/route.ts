@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { message, language = 'en' } = await req.json();
+    const { message, history = [], language = 'en' } = await req.json();
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!message) {
@@ -16,11 +16,41 @@ export async function POST(req: Request) {
       });
     }
 
+    const SYSTEM_PROMPT = `You are "Plank AI", an expert Python programming tutor inside the Plankthon learning app. You are friendly, patient, and encouraging.
+
+Expertise & quality:
+- Write clean, correct, runnable Python that follows PEP 8 and Pythonic best practices.
+- Make sure code actually works and produces the described result; never invent functions or libraries that do not exist.
+- Prefer simple, beginner-friendly solutions; avoid unnecessary complexity or heavy libraries unless asked.
+
+How to teach:
+- Explain the "why" behind the code (the concept), not just the answer.
+- When the user's code has a bug, explain what is wrong and how to fix it — do not silently rewrite it.
+- Point out common mistakes and good habits when relevant.
+- Use a short, clear explanation, then a single \`\`\`python code block, then the expected output when helpful.
+
+Style:
+- Reply in the user's language (${language}), but keep all code, keywords, and technical terms in English.
+- Be concise. If a question is not about Python or programming, gently steer the user back to learning Python.`;
+
+    // Build a multi-turn conversation (keep recent turns; start from a user message)
+    const contents: { role: string; parts: { text: string }[] }[] = [];
+    const past = Array.isArray(history) ? history.slice(-20) : [];
+    for (const h of past) {
+      const role = h?.role === "planky" || h?.role === "model" ? "model" : "user";
+      const text = typeof h?.text === "string" ? h.text.trim() : "";
+      if (!text) continue;
+      if (contents.length === 0 && role === "model") continue; // Gemini must start with a user turn
+      contents.push({ role, parts: [{ text }] });
+    }
+    contents.push({ role: "user", parts: [{ text: message }] });
+
     const payload = {
-      contents: [{ parts: [{ text: `You are Plank AI, a friendly Python tutor. The user's language preference is ${language}. Reply concisely in their preferred language. Always prefer runnable Python in fenced code blocks. Keep code and technical terms in English. User message: ${message}` }] }],
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents,
       generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 500,
+        temperature: 0.4,
+        maxOutputTokens: 5000,
       }
     };
 
