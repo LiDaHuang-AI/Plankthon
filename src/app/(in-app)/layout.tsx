@@ -197,11 +197,11 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
                     </div>
                   </div>
                   <div className="flex flex-col p-2">
-                    <Link href="#" className="px-3 py-2 text-accent bg-border rounded-md flex justify-between items-center group">
+                    <Link href="/profile" className="px-3 py-2 text-accent bg-border rounded-md flex justify-between items-center group">
                       <span>View profile</span>
                       <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100" />
                     </Link>
-                    <Link href="#" className="px-3 py-2 text-muted hover:text-text rounded-md flex justify-between items-center group transition-colors">
+                    <Link href="/profile/edit" className="px-3 py-2 text-muted hover:text-text rounded-md flex justify-between items-center group transition-colors">
                       <span>Edit profile</span>
                       <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100" />
                     </Link>

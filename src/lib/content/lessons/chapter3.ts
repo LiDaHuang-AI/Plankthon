@@ -216,7 +216,7 @@ export const chapter3: Lesson[] = [
         title_th: "สถาปัตยกรรมโปรเจกต์",
         explanation: "Congratulations on making it to the final lesson!\n\nWhen building large projects, writing one giant script is a bad idea. You should always structure your code using **Functions and Classes**.\n\nRemember the golden rule of programming: **DRY (Don't Repeat Yourself)**. If you write the exact same code twice, you should put it in a function!",
         explanation_th: "ขอแสดงความยินดีที่คุณมาถึงบทเรียนสุดท้าย!\n\nเมื่อสร้างโปรเจกต์ขนาดใหญ่ การเขียนสคริปต์ยาวๆ อันเดียวเป็นความคิดที่ไม่ดีนัก คุณควรจัดโครงสร้างโค้ดของคุณเสมอโดยใช้ **ฟังก์ชันและคลาส**\n\nจำกฎทองของการเขียนโปรแกรมไว้: **DRY (Don't Repeat Yourself - อย่าทำซ้ำ)** หากคุณเขียนโค้ดที่เหมือนกันเป๊ะสองครั้ง คุณควรใส่มันไว้ในฟังก์ชัน!",
-        exampleCode: "def process(data):\n    # Do complex work here\n    pass",
+        exampleCode: "def process(data):\n    # Do complex work here\n    print('Processing ' + data)\n\nprocess('Task')",
         expectedOutput: "",
         hint: "Reusability is key.",
         hint_th: "การนำกลับมาใช้ใหม่ได้คือกุญแจสำคัญ"

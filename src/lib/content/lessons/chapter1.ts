@@ -175,7 +175,7 @@ export const chapter1: Lesson[] = [
         title_th: "รับข้อมูลจากผู้ใช้ (User Input)",
         explanation: "You can pause your program and wait for the user to type something by using the `input()` function. \n\nYou can put a string inside the parentheses to act as a prompt for the user.",
         explanation_th: "คุณสามารถหยุดโปรแกรมและรอให้ผู้ใช้พิมพ์บางอย่างได้โดยใช้ฟังก์ชัน `input()` \n\nคุณสามารถใส่ข้อความไว้ในวงเล็บเพื่อทำหน้าที่เป็นคำถามหรือคำแนะนำสำหรับผู้ใช้",
-        exampleCode: "input('What is your name? ')",
+        exampleCode: "ans = input('What is your name? ')\nprint('Nice to meet you, ' + ans)",
         expectedOutput: "",
         hint: "The program waits until the user hits Enter.",
         hint_th: "โปรแกรมจะรอจนกว่าผู้ใช้จะกด Enter"
@@ -185,7 +185,7 @@ export const chapter1: Lesson[] = [
         title_th: "จัดเก็บข้อมูลที่รับมา",
         explanation: "The `input()` function always returns the user's answer as a **String**, even if they type a number! You should store this answer in a variable so you can use it.\n\nExample: `name = input('Name: ')`",
         explanation_th: "ฟังก์ชัน `input()` จะส่งคืนคำตอบของผู้ใช้เป็น **ข้อความ (String)** เสมอ แม้ว่าพวกเขาจะพิมพ์ตัวเลขก็ตาม! คุณควรเก็บคำตอบนี้ไว้ในตัวแปรเพื่อที่คุณจะได้นำไปใช้ได้\n\nตัวอย่าง: `name = input('Name: ')`",
-        exampleCode: "",
+        exampleCode: "name = input('Name: ')\nprint('Hello ' + name)",
         expectedOutput: "",
         hint: "Remember: '5' + '5' is '55' because input is a string.",
         hint_th: "จำไว้: '5' + '5' คือ '55' เพราะสิ่งที่รับมาคือข้อความ"

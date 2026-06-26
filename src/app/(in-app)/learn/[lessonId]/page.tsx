@@ -28,7 +28,7 @@ export default function LessonView() {
   const [output, setOutput] = useState("");
   const [isSuccess, setIsSuccess] = useState<boolean | null>(null);
   
-  const { isReady, runCode } = usePyodide();
+  const { isReady, runCode, submitInput } = usePyodide();
 
   // Reset state when page changes
   useEffect(() => {
@@ -48,6 +48,8 @@ export default function LessonView() {
       let fullOutput = "";
       await runCode(code, (text) => {
         fullOutput += text;
+      }, () => {
+        submitInput("Planky");
       });
       setOutput(fullOutput);
       if (page.exercise && fullOutput === page.exercise.check) {

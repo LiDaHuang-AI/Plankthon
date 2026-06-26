@@ -55,7 +55,6 @@ import builtins
 import js
 
 def custom_input(prompt=""):
-    print(prompt, end="")
     js.postWaitForInput(js.current_run_id)
     js.Atomics.wait(js.inputBuffer, 0, 0)
     
@@ -65,7 +64,6 @@ def custom_input(prompt=""):
         chars.append(chr(js.inputBuffer[i]))
         
     js.inputBuffer[0] = 0
-    
     return "".join(chars)
 
 builtins.input = custom_input

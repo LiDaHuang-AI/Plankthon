@@ -11,14 +11,14 @@ export default function ChallengeListing() {
   const { state } = useAppContext();
   const router = useRouter();
   const [inputValue, setInputValue] = useState("");
-  const [history, setHistory] = useState<{text: string, type: "command" | "error"}[]>([]);
+  const [history, setHistory] = useState<{ text: string, type: "command" | "error" }[]>([]);
   const lang = state?.settings?.language || 'en';
 
   const levels = [1, 2, 3];
 
-  const furthestUnlockedIndex = challenges.reduce((max, c, i) => 
+  const furthestUnlockedIndex = challenges.reduce((max, c, i) =>
     (state?.progress.unlocked.includes(c.id) || state?.progress.challengesSolved.includes(c.id)) ? Math.max(max, i) : max
-  , 0);
+    , 0);
 
   return (
     <div className="p-6 md:p-8 font-mono text-[13px]">
@@ -70,7 +70,7 @@ export default function ChallengeListing() {
 
       <div className="mt-6 space-y-2">
         <div className="text-muted">select your challenge</div>
-        
+
         {history.length > 0 && (
           <div className="flex flex-col space-y-1 font-mono text-[13px]">
             {history.map((line, i) => (
@@ -87,10 +87,10 @@ export default function ChallengeListing() {
             e.preventDefault();
             const cmd = inputValue.trim();
             if (!cmd) return;
-            
-            const newHistory: {text: string, type: "command"|"error"}[] = [...history, { text: `Plankthon:\\Home\\Challenge\\USER> ${cmd}`, type: "command" }];
+
+            const newHistory: { text: string, type: "command" | "error" }[] = [...history, { text: `Plankthon:\\Home\\Challenge\\USER> ${cmd}`, type: "command" }];
             const match = challenges.find(c => c.id.toLowerCase() === cmd.toLowerCase() || c.title.toLowerCase() === cmd.toLowerCase());
-            
+
             if (match) {
               const challengeIndex = challenges.findIndex(c => c.id === match.id);
               if (state?.isAdmin || challengeIndex <= furthestUnlockedIndex) {
@@ -102,7 +102,7 @@ export default function ChallengeListing() {
             } else {
               newHistory.push({ text: `Error: Challenge '${cmd}' not found.`, type: "error" });
             }
-            
+
             setHistory(newHistory);
             setInputValue("");
           }}
