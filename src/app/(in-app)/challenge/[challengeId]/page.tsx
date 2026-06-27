@@ -10,6 +10,7 @@ import { usePyodide } from "@/lib/pyodide/client";
 import { Terminal } from "@/components/ui/Terminal";
 import { t } from "@/lib/i18n";
 import clsx from "clsx";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ChallengeView() {
   const { challengeId } = useParams();
@@ -416,41 +417,54 @@ export default function ChallengeView() {
       {/* Planky Hint Panel on Fail - Removed because we use explanations now */}
 
       {/* Summary Modal */}
-      {showSummary && (
-        <div className="fixed inset-0 z-[100] bg-surface-2 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="bg-surface-2 border border-border rounded-3xl p-8 max-w-md w-full shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95">
-            <div className="w-20 h-20 bg-accent rounded-full flex items-center justify-center mb-6">
-              <CheckCircle className="w-10 h-10 text-bg" />
-            </div>
-            <h2 className="text-3xl font-bold text-text mb-2">{t(lang, 'challengeComplete')}</h2>
-            <p className="text-muted mb-8">{lang === 'th' && challenge.title_th ? challenge.title_th : challenge.title}</p>
-
-            <div className="w-full grid grid-cols-2 gap-4 mb-8">
-              <div className="bg-surface border border-border rounded-2xl p-4 flex flex-col items-center">
-                <span className="text-3xl font-bold text-c-string mb-1">{results.filter(r => r.correct).length}</span>
-                <span className="text-muted text-xs uppercase tracking-wider font-bold">{t(lang, 'correct')}</span>
-              </div>
-              <div className="bg-surface border border-border rounded-2xl p-4 flex flex-col items-center">
-                <span className="text-3xl font-bold text-c-danger mb-1">{results.filter(r => !r.correct).length}</span>
-                <span className="text-muted text-xs uppercase tracking-wider font-bold">{t(lang, 'incorrect')}</span>
-              </div>
-              <div className="col-span-2 bg-surface border border-border rounded-2xl p-4 flex flex-col items-center">
-                <span className="text-2xl font-bold text-text mb-1">
-                  {Math.floor((new Date().getTime() - startTime.getTime()) / 60000)}m {Math.floor(((new Date().getTime() - startTime.getTime()) % 60000) / 1000)}s
-                </span>
-                <span className="text-muted text-xs uppercase tracking-wider font-bold">{t(lang, 'timeTaken')}</span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => router.push('/challenge')}
-              className="w-full py-4 bg-accent text-bg font-bold text-lg rounded-xl hover:opacity-90 transition-opacity"
+      <AnimatePresence>
+        {showSummary && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-bg/80 backdrop-blur-sm flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", bounce: 0.4, duration: 0.6 }}
+              className="bg-surface-2 border border-border rounded-3xl p-8 max-w-md w-full shadow-2xl flex flex-col items-center text-center"
             >
-              {t(lang, 'finish')}
-            </button>
-          </div>
-        </div>
-      )}
+              <div className="w-20 h-20 bg-accent rounded-full flex items-center justify-center mb-6">
+                <CheckCircle className="w-10 h-10 text-bg stroke-[2.5]" />
+              </div>
+              <h2 className="text-3xl font-bold text-text mb-2">{t(lang, 'challengeComplete')}</h2>
+              <p className="text-muted mb-8">{lang === 'th' && challenge.title_th ? challenge.title_th : challenge.title}</p>
+
+              <div className="w-full grid grid-cols-2 gap-4 mb-8">
+                <div className="bg-surface border border-border rounded-2xl p-4 flex flex-col items-center">
+                  <span className="text-4xl font-bold text-c-string mb-1">{results.filter(r => r.correct).length}</span>
+                  <span className="text-muted text-[11px] font-bold tracking-wider">{t(lang, 'correct').toUpperCase()}</span>
+                </div>
+                <div className="bg-surface border border-border rounded-2xl p-4 flex flex-col items-center">
+                  <span className="text-4xl font-bold text-c-danger mb-1">{results.filter(r => !r.correct).length}</span>
+                  <span className="text-muted text-[11px] font-bold tracking-wider">{t(lang, 'incorrect').toUpperCase()}</span>
+                </div>
+                <div className="col-span-2 bg-surface border border-border rounded-2xl p-4 flex flex-col items-center">
+                  <span className="text-2xl font-bold text-text mb-1">
+                    {Math.floor((new Date().getTime() - startTime.getTime()) / 60000)}m {Math.floor(((new Date().getTime() - startTime.getTime()) % 60000) / 1000)}s
+                  </span>
+                  <span className="text-muted text-[11px] font-bold tracking-wider">{t(lang, 'timeTaken').toUpperCase()}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => router.push('/challenge')}
+                className="w-full py-4 bg-accent text-bg font-bold text-[17px] rounded-2xl hover:opacity-90 transition-opacity"
+              >
+                {t(lang, 'finish')}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

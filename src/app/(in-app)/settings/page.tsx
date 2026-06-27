@@ -65,18 +65,7 @@ export default function SettingsPage() {
               </div>
               <ThemeTogglerButton />
             </div>
-            <div className="h-px bg-border w-full"></div>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-text font-medium">Editor Font Size</div>
-                <div className="text-muted text-[13px] mt-1">Size of the text in the code editor.</div>
-              </div>
-              <Toggle
-                options={[{ value: "12", label: "12px" }, { value: "14", label: "14px" }, { value: "16", label: "16px" }]}
-                value={String(state.settings.fontSize)}
-                onChange={(val) => updateSetting("fontSize", Number(val))}
-              />
-            </div>
+
           </div>
         </div>
 

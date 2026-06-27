@@ -1,20 +1,33 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, useMemo, Suspense } from "react";
 import { Terminal } from "@/components/ui/Terminal";
 import { usePyodide } from "@/lib/pyodide/client";
-import { Play, TerminalSquare, Trash2, FileCode } from "lucide-react";
+import { Play, Square, Trash2, FileCode, RotateCcw } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useAppContext } from "../../ClientProvider";
+import CodeMirror from "@uiw/react-codemirror";
+import { python } from "@codemirror/lang-python";
+import { oneDark } from "@codemirror/theme-one-dark";
+import { keymap } from "@codemirror/view";
+import { Prec } from "@codemirror/state";
+
+const DEFAULT_CODE = 'print("Hello, Planky!")\n';
 
 function CodingSandboxContent() {
   const searchParams = useSearchParams();
   const { state, updateState } = useAppContext();
-  
-  const [code, setCode] = useState(state?.coding?.code || "print(\"Hello, Planky!\")\n");
-  const [scrollTop, setScrollTop] = useState(0);
-  const [terminalLines, setTerminalLines] = useState<{text: string, type?: "default" | "error" | "success" | "command"}[]>(state?.coding?.terminalLines || []);
 
+  const [code, setCode] = useState(state?.coding?.code || DEFAULT_CODE);
+  const [terminalLines, setTerminalLines] = useState<{ text: string; type?: "default" | "error" | "success" | "command" }[]>(state?.coding?.terminalLines || []);
+  const [isTyping, setIsTyping] = useState(false);
+  const [waitingForInput, setWaitingForInput] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [isDark, setIsDark] = useState(true);
+
+  const { isReady, runCode, submitInput, stop } = usePyodide();
+
+  // Autosave code (debounced) + persist terminal output
   useEffect(() => {
     const timeout = setTimeout(() => {
       updateState(prev => ({ ...prev, coding: { ...prev.coding, code } }));
@@ -25,17 +38,26 @@ function CodingSandboxContent() {
   useEffect(() => {
     updateState(prev => ({ ...prev, coding: { ...prev.coding, terminalLines } }));
   }, [terminalLines, updateState]);
-  const [isTyping, setIsTyping] = useState(false);
-  const [waitingForInput, setWaitingForInput] = useState(false);
-  const { isReady, runCode, submitInput } = usePyodide();
 
+  // Load code passed from Plank AI's "Insert"
   useEffect(() => {
     const qCode = searchParams.get("code");
     if (qCode) setCode(qCode);
   }, [searchParams]);
 
+  // Follow the app's light/dark theme (toggled as a class on <html>)
+  useEffect(() => {
+    const el = document.documentElement;
+    const update = () => setIsDark(el.classList.contains("dark"));
+    update();
+    const obs = new MutationObserver(update);
+    obs.observe(el, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+
   const handleRun = async () => {
-    if (!isReady) return;
+    if (!isReady || isRunning) return;
+    setIsRunning(true);
     setIsTyping(true);
     setWaitingForInput(false);
     setTerminalLines([{ text: "python main.py", type: "command" }]);
@@ -57,10 +79,16 @@ function CodingSandboxContent() {
         }
       );
     } catch (e: any) {
-      setTerminalLines(prev => [...prev, { text: e.message, type: "error" }]);
+      if (e?.message === "__STOPPED__") {
+        setTerminalLines(prev => [...prev, { text: "⛔ Stopped", type: "error" }]);
+      } else {
+        setTerminalLines(prev => [...prev, { text: e.message, type: "error" }]);
+      }
+    } finally {
+      setIsTyping(false);
+      setWaitingForInput(false);
+      setIsRunning(false);
     }
-    setIsTyping(false);
-    setWaitingForInput(false);
   };
 
   const handleInputSubmit = (val: string) => {
@@ -70,18 +98,35 @@ function CodingSandboxContent() {
     setIsTyping(true);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-      handleRun();
+  const handleReset = () => {
+    if (window.confirm("ล้างโค้ดในเอดิเตอร์กลับเป็นค่าเริ่มต้น?")) {
+      setCode(DEFAULT_CODE);
     }
   };
 
+  // Keep the latest handleRun reachable from the (stable) CodeMirror keymap
+  const runRef = useRef(handleRun);
+  runRef.current = handleRun;
+
+  const extensions = useMemo(
+    () => [
+      python(),
+      Prec.highest(
+        keymap.of([{ key: "Mod-Enter", run: () => { runRef.current(); return true; } }])
+      ),
+    ],
+    []
+  );
+
+  const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
+  const runKbd = `${isMac ? "⌘" : "Ctrl"}+↵`;
+
   return (
     <div className="w-full h-full bg-bg p-3 md:p-4 grid grid-rows-[3fr_2fr] gap-4 overflow-hidden">
-      
+
       {/* Editor Section */}
       <div className="bg-surface border border-border rounded-xl flex flex-col overflow-hidden min-h-0 shadow-xl ring-1 ring-white/5">
-        
+
         {/* IDE-style Tab Bar */}
         <div className="flex items-center justify-between bg-bg border-b border-border pr-3">
           <div className="flex items-center gap-2 bg-surface px-4 py-2.5 border-r border-border text-sm font-medium text-text relative">
@@ -89,47 +134,65 @@ function CodingSandboxContent() {
             <FileCode className="w-4 h-4 text-accent" />
             main.py
           </div>
-          
-          <div className="flex items-center gap-3">
-            <button 
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-muted hover:text-text transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset
+            </button>
+            <button
               onClick={() => setTerminalLines([])}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-muted hover:text-text transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
               Clear
             </button>
-            <button 
-              onClick={handleRun}
-              disabled={!isReady}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-accent text-bg font-bold rounded hover:opacity-90 transition-opacity disabled:opacity-50 text-sm shadow-[0_0_10px_rgba(255,212,59,0.2)]"
-            >
-              <Play className="w-3.5 h-3.5 fill-current" />
-              Run Code
-            </button>
+            {isRunning ? (
+              <button
+                onClick={stop}
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-c-danger text-white font-bold rounded hover:opacity-90 transition-opacity text-sm"
+              >
+                <Square className="w-3.5 h-3.5 fill-current" />
+                Stop
+              </button>
+            ) : (
+              <button
+                onClick={handleRun}
+                disabled={!isReady}
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-accent text-bg font-bold rounded hover:opacity-90 transition-opacity disabled:opacity-50 text-sm shadow-[0_0_10px_rgba(255,212,59,0.2)]"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                {isReady ? "Run" : "Loading…"}
+                {isReady && (
+                  <span className="hidden sm:inline text-[10px] font-semibold opacity-70 ml-1 px-1.5 py-0.5 rounded bg-black/20">
+                    {runKbd}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Editor Area */}
-        <div className="flex-1 flex relative min-h-0 bg-surface">
-          <div className="w-12 bg-bg border-r border-border font-mono text-[13px] leading-[1.6] text-muted/40 select-none overflow-hidden relative">
-            <div className="absolute top-0 left-0 right-0 pt-4 pr-3 flex flex-col items-end" style={{ transform: `translateY(-${scrollTop}px)` }}>
-              {code.split('\n').map((_, i) => <div key={i}>{i + 1}</div>)}
-            </div>
-          </div>
-          <textarea 
+        {/* Editor Area (CodeMirror) */}
+        <div className="flex-1 min-h-0 overflow-hidden text-[14px]">
+          <CodeMirror
             value={code}
-            onChange={(e) => setCode(e.target.value)}
-            onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-            onKeyDown={handleKeyDown}
-            className="w-full h-full bg-transparent p-4 text-text font-mono text-[14px] outline-none resize-none leading-[1.6] selection:bg-accent/30"
-            spellCheck={false}
+            onChange={(val) => setCode(val)}
+            height="100%"
+            theme={isDark ? oneDark : "light"}
+            extensions={extensions}
+            style={{ height: "100%", fontSize: "14px" }}
+            basicSetup={{ highlightActiveLine: true, autocompletion: true, foldGutter: true }}
           />
         </div>
       </div>
 
       {/* Terminal Section */}
       <div className="flex flex-col min-h-0 shadow-xl rounded-xl ring-1 ring-white/5">
-        <Terminal 
+        <Terminal
           lines={terminalLines}
           prompt="Plankthon:\Home\USER>"
           isTyping={isTyping}
@@ -149,4 +212,3 @@ export default function CodingSandbox() {
     </Suspense>
   );
 }
-

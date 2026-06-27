@@ -77,7 +77,7 @@ function ThemeTogglerButton({
           className={cn("p-2 rounded-full bg-surface-2 border border-border shadow hover:brightness-110 transition-all outline-none", className)}
           onClick={(e) => {
             onClick?.(e);
-            toggleTheme(getNextTheme(effective, modes));
+            toggleTheme(getNextTheme(effective, modes), e);
           }}
           {...props}
         >

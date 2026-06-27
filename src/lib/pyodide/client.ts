@@ -1,35 +1,38 @@
 // Pyodide Client hook
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 export function usePyodide() {
   const [isReady, setIsReady] = useState(false);
   const workerRef = useRef<Worker | null>(null);
   const bufferRef = useRef<SharedArrayBuffer | null>(null);
+  const pendingRef = useRef<{ reject: (e: any) => void; handler: (e: MessageEvent) => void } | null>(null);
 
-  useEffect(() => {
-    workerRef.current = new Worker("/worker.js");
-    
+  const initWorker = useCallback(() => {
+    const w = new Worker("/worker.js");
+
     if (typeof SharedArrayBuffer !== "undefined") {
       bufferRef.current = new SharedArrayBuffer(1024 * 4); // 4KB buffer
     } else {
       console.warn("SharedArrayBuffer not available. input() will not block.");
     }
 
-    workerRef.current.onmessage = (e) => {
-      if (e.data.type === "READY") {
-        setIsReady(true);
-      }
+    w.onmessage = (e) => {
+      if (e.data.type === "READY") setIsReady(true);
     };
 
-    workerRef.current.postMessage({ type: "INIT", id: "init" });
+    w.postMessage({ type: "INIT", id: "init" });
+    workerRef.current = w;
+  }, []);
 
+  useEffect(() => {
+    initWorker();
     return () => {
       workerRef.current?.terminate();
     };
-  }, []);
+  }, [initWorker]);
 
   const runCode = (
-    code: string, 
+    code: string,
     onStdout?: (text: string) => void,
     onInput?: () => void
   ): Promise<string> => {
@@ -40,7 +43,7 @@ export function usePyodide() {
       }
 
       const id = Math.random().toString(36).substring(7);
-      
+
       const handler = (e: MessageEvent) => {
         if (e.data.id !== id) return;
 
@@ -50,34 +53,52 @@ export function usePyodide() {
           onInput();
         } else if (e.data.type === "DONE") {
           workerRef.current?.removeEventListener("message", handler);
+          pendingRef.current = null;
           resolve(e.data.result);
         } else if (e.data.type === "ERROR") {
           workerRef.current?.removeEventListener("message", handler);
+          pendingRef.current = null;
           reject(new Error(e.data.error));
         }
       };
 
+      pendingRef.current = { reject, handler };
       workerRef.current.addEventListener("message", handler);
-      workerRef.current.postMessage({ 
-        type: "RUN", 
-        id, 
-        code, 
-        buffer: bufferRef.current 
+      workerRef.current.postMessage({
+        type: "RUN",
+        id,
+        code,
+        buffer: bufferRef.current,
       });
     });
   };
 
+  // Hard stop: terminate the worker (kills a runaway loop OR code blocked on
+  // input) and spin up a fresh Pyodide. Reliable, at the cost of a short reload.
+  const stop = useCallback(() => {
+    if (pendingRef.current) {
+      workerRef.current?.removeEventListener("message", pendingRef.current.handler);
+      const rej = pendingRef.current.reject;
+      pendingRef.current = null;
+      rej(new Error("__STOPPED__"));
+    }
+    workerRef.current?.terminate();
+    workerRef.current = null;
+    setIsReady(false);
+    initWorker();
+  }, [initWorker]);
+
   const submitInput = (text: string) => {
     if (!bufferRef.current) return;
     const view = new Int32Array(bufferRef.current);
-    
+
     view[0] = text.length;
     for (let i = 0; i < text.length; i++) {
       view[i + 1] = text.charCodeAt(i);
     }
-    
+
     Atomics.notify(view, 0, 1);
   };
 
-  return { isReady, runCode, submitInput };
+  return { isReady, runCode, submitInput, stop };
 }

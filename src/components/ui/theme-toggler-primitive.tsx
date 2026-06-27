@@ -12,7 +12,7 @@ type ChildrenRender =
   | ((state: {
       resolved: Resolved;
       effective: ThemeSelection;
-      toggleTheme: (theme: ThemeSelection) => void;
+      toggleTheme: (theme: ThemeSelection, e?: React.MouseEvent | MouseEvent) => void;
     }) => React.ReactNode);
 
 function getSystemEffective(): Resolved {
@@ -80,7 +80,7 @@ function ThemeToggler({
   const [fromClip, toClip] = getClipKeyframes(direction);
 
   const toggleTheme = React.useCallback(
-    async (theme: ThemeSelection) => {
+    async (theme: ThemeSelection, e?: React.MouseEvent | MouseEvent) => {
       const resolved = theme === 'system' ? getSystemEffective() : theme;
 
       setCurrent({ effective: theme, resolved });
@@ -93,19 +93,16 @@ function ThemeToggler({
 
       if (!document.startViewTransition) {
         flushSync(() => {
-          setPreview({ effective: theme, resolved });
+          setTheme(theme);
         });
-        setTheme(theme);
         return;
       }
 
       await document.startViewTransition(() => {
         flushSync(() => {
-          setPreview({ effective: theme, resolved });
-          document.documentElement.classList.toggle(
-            'dark',
-            resolved === 'dark',
-          );
+          setTheme(theme);
+          document.documentElement.classList.remove('light', 'dark');
+          document.documentElement.classList.add(resolved);
         });
       }).ready;
 
@@ -113,14 +110,11 @@ function ThemeToggler({
         .animate(
           { clipPath: [fromClip, toClip] },
           {
-            duration: 700,
+            duration: 500,
             easing: 'ease-in-out',
             pseudoElement: '::view-transition-new(root)',
           },
-        )
-        .finished.finally(() => {
-          setTheme(theme);
-        });
+        );
     },
     [onImmediateChange, resolvedTheme, fromClip, toClip, setTheme],
   );
