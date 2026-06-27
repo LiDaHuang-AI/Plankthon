@@ -100,5 +100,50 @@ export function usePyodide() {
     Atomics.notify(view, 0, 1);
   };
 
-  return { isReady, runCode, submitInput, stop };
+  // Format the code with Black (in the worker). Rejects on syntax error.
+  const format = (code: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!workerRef.current) {
+        reject(new Error("Worker not ready"));
+        return;
+      }
+      const id = Math.random().toString(36).substring(7);
+      const handler = (e: MessageEvent) => {
+        if (e.data.id !== id) return;
+        if (e.data.type === "FORMATTED") {
+          workerRef.current?.removeEventListener("message", handler);
+          resolve(e.data.code);
+        } else if (e.data.type === "FORMAT_ERROR") {
+          workerRef.current?.removeEventListener("message", handler);
+          reject(new Error(e.data.error));
+        }
+      };
+      workerRef.current.addEventListener("message", handler);
+      workerRef.current.postMessage({ type: "FORMAT", id, code });
+    });
+  };
+
+  // Lint the code with pyflakes (in the worker). Never rejects.
+  const lint = (
+    code: string
+  ): Promise<{ line: number; col: number; message: string; error?: boolean }[]> => {
+    return new Promise((resolve) => {
+      if (!workerRef.current) {
+        resolve([]);
+        return;
+      }
+      const id = Math.random().toString(36).substring(7);
+      const handler = (e: MessageEvent) => {
+        if (e.data.id !== id) return;
+        if (e.data.type === "LINTED") {
+          workerRef.current?.removeEventListener("message", handler);
+          resolve(e.data.diagnostics || []);
+        }
+      };
+      workerRef.current.addEventListener("message", handler);
+      workerRef.current.postMessage({ type: "LINT", id, code });
+    });
+  };
+
+  return { isReady, runCode, submitInput, stop, format, lint };
 }

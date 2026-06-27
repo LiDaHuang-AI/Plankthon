@@ -3,14 +3,15 @@
 import { useState, useEffect, useRef, useMemo, Suspense } from "react";
 import { Terminal } from "@/components/ui/Terminal";
 import { usePyodide } from "@/lib/pyodide/client";
-import { Play, Square, Trash2, FileCode, RotateCcw } from "lucide-react";
+import { Play, Square, Trash2, FileCode, RotateCcw, Wand2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useAppContext } from "../../ClientProvider";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
 import { oneDark } from "@codemirror/theme-one-dark";
-import { keymap } from "@codemirror/view";
+import { keymap, EditorView } from "@codemirror/view";
 import { Prec } from "@codemirror/state";
+import { lintGutter, setDiagnostics, type Diagnostic } from "@codemirror/lint";
 
 const DEFAULT_CODE = 'print("Hello, Planky!")\n';
 
@@ -23,9 +24,10 @@ function CodingSandboxContent() {
   const [isTyping, setIsTyping] = useState(false);
   const [waitingForInput, setWaitingForInput] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [isFormatting, setIsFormatting] = useState(false);
   const [isDark, setIsDark] = useState(true);
 
-  const { isReady, runCode, submitInput, stop } = usePyodide();
+  const { isReady, runCode, submitInput, stop, format, lint } = usePyodide();
 
   // Autosave code (debounced) + persist terminal output
   useEffect(() => {
@@ -104,19 +106,61 @@ function CodingSandboxContent() {
     }
   };
 
-  // Keep the latest handleRun reachable from the (stable) CodeMirror keymap
+  const handleFormat = async () => {
+    if (!isReady || isFormatting || isRunning) return;
+    setIsFormatting(true);
+    try {
+      const formatted = await format(code);
+      setCode(formatted);
+    } catch {
+      setTerminalLines(prev => [...prev, { text: "⚠ จัดรูปแบบไม่ได้ — โค้ดมี syntax error", type: "error" }]);
+    } finally {
+      setIsFormatting(false);
+    }
+  };
+
+  // CodeMirror view ref + latest handleRun/lint for the (stable) extensions
+  const viewRef = useRef<EditorView | null>(null);
   const runRef = useRef(handleRun);
   runRef.current = handleRun;
+  const lintRef = useRef(lint);
+  lintRef.current = lint;
 
   const extensions = useMemo(
     () => [
       python(),
+      lintGutter(),
       Prec.highest(
         keymap.of([{ key: "Mod-Enter", run: () => { runRef.current(); return true; } }])
       ),
     ],
     []
   );
+
+  // Live linting with pyflakes (debounced) — drive diagnostics into the editor
+  useEffect(() => {
+    if (!isReady || isRunning) return;
+    const t = setTimeout(async () => {
+      if (!viewRef.current) return;
+      let diags: { line: number; col: number; message: string; error?: boolean }[] = [];
+      try {
+        diags = await lintRef.current(code);
+      } catch {
+        return;
+      }
+      const v = viewRef.current;
+      if (!v) return;
+      const doc = v.state.doc;
+      const mapped: Diagnostic[] = diags.map((d) => {
+        const ln = Math.min(Math.max(d.line || 1, 1), doc.lines);
+        const line = doc.line(ln);
+        const from = Math.min(line.from + Math.max((d.col || 1) - 1, 0), line.to);
+        return { from, to: line.to, severity: d.error ? "error" : "warning", message: d.message };
+      });
+      v.dispatch(setDiagnostics(v.state, mapped));
+    }, 700);
+    return () => clearTimeout(t);
+  }, [code, isReady, isRunning]);
 
   const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
   const runKbd = `${isMac ? "⌘" : "Ctrl"}+↵`;
@@ -136,6 +180,15 @@ function CodingSandboxContent() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleFormat}
+              disabled={!isReady || isFormatting || isRunning}
+              title="จัดรูปแบบโค้ดด้วย Black"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-muted hover:text-text transition-colors disabled:opacity-40"
+            >
+              <Wand2 className="w-3.5 h-3.5" />
+              {isFormatting ? "Formatting…" : "Format"}
+            </button>
             <button
               onClick={handleReset}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-muted hover:text-text transition-colors"
@@ -181,6 +234,7 @@ function CodingSandboxContent() {
           <CodeMirror
             value={code}
             onChange={(val) => setCode(val)}
+            onCreateEditor={(view) => { viewRef.current = view; }}
             height="100%"
             theme={isDark ? oneDark : "light"}
             extensions={extensions}
