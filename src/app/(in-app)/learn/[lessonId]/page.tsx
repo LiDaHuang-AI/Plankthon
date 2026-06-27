@@ -46,7 +46,7 @@ export default function LessonView() {
     if (!isReady) return;
     try {
       let fullOutput = "";
-      await runCode(code, (text) => {
+      await runCode(code, undefined, (text) => {
         fullOutput += text;
       }, () => {
         submitInput("Planky");

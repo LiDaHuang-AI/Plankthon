@@ -86,7 +86,7 @@ export default function ChallengeView() {
     setTerminalLines([{ text: "python solution.py", type: "command" }]);
     try {
       let fullOutput = "";
-      await runCode(code, (text) => { fullOutput += text; });
+      await runCode(code, undefined, (text) => { fullOutput += text; });
       setTerminalLines(prev => [...prev, { text: fullOutput }]);
     } catch (e: any) {
       setTerminalLines(prev => [...prev, { text: e.message, type: "error" }]);
@@ -145,7 +145,7 @@ export default function ChallengeView() {
             `\nimport sys, builtins\nclass MockInput:\n    def __init__(self, val):\n        self.val = val\n    def __call__(self, prompt=""):\n        return self.val\nbuiltins.input = MockInput(${JSON.stringify(test.input.trim())})\n${code}\n` : code;
 
           let fullOutput = "";
-          await runCode(wrappedCode, (text) => { fullOutput += text; });
+          await runCode(wrappedCode, undefined, (text) => { fullOutput += text; });
           if (fullOutput === test.assertStdout) {
             setTerminalLines(prev => [...prev, { text: `test_${i} .......... [PASS]`, type: "success" }]);
           } else {

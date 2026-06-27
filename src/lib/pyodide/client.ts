@@ -33,6 +33,7 @@ export function usePyodide() {
 
   const runCode = (
     code: string,
+    files?: { name: string; content: string }[],
     onStdout?: (text: string) => void,
     onInput?: () => void
   ): Promise<string> => {
@@ -68,6 +69,7 @@ export function usePyodide() {
         type: "RUN",
         id,
         code,
+        files,
         buffer: bufferRef.current,
       });
     });

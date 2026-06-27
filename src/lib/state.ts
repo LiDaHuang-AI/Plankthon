@@ -24,7 +24,9 @@ export type State = {
   };
   plankyChat: { id: string; role: "you" | "planky"; text: string; code?: string; output?: string }[];
   coding: {
-    code: string;
+    code?: string;
+    files?: { name: string; content: string }[];
+    activeFile?: string;
     terminalLines: {text: string, type?: "default" | "error" | "success" | "command"}[];
   };
   isAdmin?: boolean;

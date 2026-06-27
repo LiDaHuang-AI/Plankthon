@@ -44,7 +44,7 @@ async function ensurePyflakes(p) {
 }
 
 self.onmessage = async (event) => {
-  const { id, type, code, buffer } = event.data;
+  const { id, type, code, files, buffer } = event.data;
 
   if (type === "INIT") {
     try {
@@ -66,6 +66,15 @@ self.onmessage = async (event) => {
 
       const p = await init();
 
+      // Write all project files to the FS so imports across files resolve
+      if (Array.isArray(files)) {
+        for (const f of files) {
+          if (f && typeof f.name === "string" && typeof f.content === "string") {
+            try { p.FS.writeFile(f.name, f.content); } catch (e) { /* ignore */ }
+          }
+        }
+      }
+
       let stdoutText = "";
       p.setStdout({
         batched: (str) => {
@@ -76,8 +85,13 @@ self.onmessage = async (event) => {
 
       await p.runPythonAsync(`
 import sys
+import os
 import builtins
 import js
+
+_cwd = os.getcwd()
+if _cwd not in sys.path:
+    sys.path.insert(0, _cwd)
 
 def custom_input(prompt=""):
     js.postWaitForInput(js.current_run_id)
