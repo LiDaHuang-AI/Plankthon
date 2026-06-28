@@ -54,22 +54,52 @@ Style:
       }
     };
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
+    // Try a reliable model first; Gemini returns 503/429/5xx when a model is
+    // overloaded or rate-limited on the free tier, so fall back automatically.
+    const MODELS = ["gemini-2.5-flash", "gemini-3.5-flash"];
+    let lastStatus = 0;
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch from Gemini API");
+    for (const model of MODELS) {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const text =
+          data.candidates?.[0]?.content?.parts?.[0]?.text ||
+          "Sorry, I couldn't understand that.";
+        return NextResponse.json({ text });
+      }
+
+      lastStatus = response.status;
+      const body = await response.text().catch(() => "");
+      console.error(`Plank AI: ${model} -> ${response.status} ${body.slice(0, 300)}`);
+
+      // 400/401/403 mean the request or key is wrong — trying another model
+      // won't help, so stop. Only retry on transient/quota errors.
+      if (![429, 500, 502, 503, 504].includes(response.status)) break;
     }
 
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't understand that.";
-
-    return NextResponse.json({ text });
+    // Every model failed. For overload/quota, reply with a friendly message so
+    // it renders as a normal Planky turn rather than a scary error.
+    const busy = lastStatus === 503 || lastStatus === 429;
+    if (busy) {
+      const busyMsg =
+        language === "th"
+          ? "ตอนนี้ Plank AI มีคนใช้งานเยอะมาก (โมเดลโหลดเต็ม) ลองส่งใหม่อีกครั้งในอีกสักครู่นะ 🐡"
+          : "Plank AI is very busy right now (the model is overloaded). Please try again in a moment. 🐡";
+      return NextResponse.json({ text: busyMsg });
+    }
+    return NextResponse.json(
+      { error: `Gemini API error (${lastStatus}).` },
+      { status: 502 }
+    );
   } catch (error: any) {
     console.error("Plank AI Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
