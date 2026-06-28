@@ -5,6 +5,7 @@ import { CodeBlock } from "@/components/ui/CodeBlock";
 import { usePyodide } from "@/lib/pyodide/client";
 import { useRouter } from "next/navigation";
 import { useAppContext } from "../../ClientProvider";
+import { RippleButton } from "@/components/ui/RippleButton";
 
 type ChatMessage = {
   id: string;
@@ -167,25 +168,25 @@ export default function PlankyChat() {
                     <div className="flex flex-col gap-2 mt-2 max-w-4xl bg-surface-2 p-3 rounded border border-border">
                       <CodeBlock code={msg.code} animateTyping={false} />
                       <div className="flex gap-4 mt-2">
-                        <button 
+                        <RippleButton
                           onClick={() => navigator.clipboard.writeText(msg.code!)}
                           className="text-accent hover:text-text transition-colors uppercase text-[10px] tracking-wider"
                         >
                           [ Copy ]
-                        </button>
-                        <button 
+                        </RippleButton>
+                        <RippleButton
                           onClick={() => handleRunAction(msg.id, msg.code!)}
                           disabled={!isReady}
                           className="text-accent hover:text-text transition-colors uppercase text-[10px] tracking-wider disabled:opacity-50"
                         >
                           [ Run ]
-                        </button>
-                        <button 
+                        </RippleButton>
+                        <RippleButton
                           onClick={() => handleInsertAction(msg.code!)}
                           className="text-accent hover:text-text transition-colors uppercase text-[10px] tracking-wider"
                         >
                           [ Insert ]
-                        </button>
+                        </RippleButton>
                       </div>
                       {msg.output && (
                         <div className="bg-surface-2 border border-accent/30 p-2 text-muted mt-2 font-mono text-xs">

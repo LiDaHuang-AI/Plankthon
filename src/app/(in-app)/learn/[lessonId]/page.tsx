@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { usePyodide } from "@/lib/pyodide/client";
 import { t } from "@/lib/i18n";
 import clsx from "clsx";
+import { RippleButton } from "@/components/ui/RippleButton";
 
 export default function LessonView() {
   const { lessonId } = useParams();
@@ -162,13 +163,13 @@ export default function LessonView() {
             )}
             
             <div className="flex items-center gap-4 mt-4">
-              <button 
+              <RippleButton
                 onClick={handleRun}
                 disabled={!isReady}
                 className="px-6 py-2 bg-accent text-bg font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
               >
                 {isReady ? t(lang, 'run') : t(lang, 'loading')}
-              </button>
+              </RippleButton>
               <div className="flex-1 bg-screen border border-border rounded-xl p-3 font-mono text-[13px] min-h-[46px] flex items-center">
                 {output ? (
                   <span className={clsx("whitespace-pre-wrap", isSuccess === false ? "text-c-danger" : "text-c-string")}>
@@ -209,13 +210,13 @@ export default function LessonView() {
         >
           Back to Menu
         </Link>
-        <button 
+        <RippleButton
           onClick={handleNext}
           disabled={isSuccess !== true}
           className="px-8 py-2 bg-accent text-bg font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {currentPageIndex < lesson.pages.length - 1 ? t(lang, 'next') : (lang === 'th' ? "เสร็จสิ้นบทเรียน ->" : "Complete Lesson ->")}
-        </button>
+        </RippleButton>
       </footer>
     </div>
   );

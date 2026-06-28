@@ -7,6 +7,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAppContext } from "../ClientProvider";
 import { CodeBlock } from "@/components/ui/CodeBlock";
+import { RippleButton } from "@/components/ui/RippleButton";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -163,12 +164,13 @@ export default function AuthPage() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-sm bg-surface border border-border rounded-2xl p-6 shadow-2xl z-10 flex flex-col items-center text-center"
             >
-              <button 
+              <RippleButton
                 onClick={() => setIsModalOpen(false)}
+                aria-label="Close"
                 className="absolute top-4 right-4 text-muted hover:text-text transition-colors"
               >
                 <X size={20} />
-              </button>
+              </RippleButton>
               <div className="w-14 h-14 rounded-full bg-border flex items-center justify-center mb-4 border border-border">
                 <Frown className="text-accent" size={28} />
               </div>

@@ -11,6 +11,7 @@ import { Terminal } from "@/components/ui/Terminal";
 import { t } from "@/lib/i18n";
 import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
+import { RippleButton } from "@/components/ui/RippleButton";
 
 export default function ChallengeView() {
   const { challengeId } = useParams();
@@ -194,21 +195,21 @@ export default function ChallengeView() {
 
         <div className="bg-surface border-t border-border p-4 flex flex-col gap-4">
           <div className="flex items-center gap-4">
-            <button
+            <RippleButton
               onClick={handleRun}
               disabled={!isReady || isSubmitted}
               className="px-6 py-2 bg-transparent border border-border text-text rounded-xl hover:bg-border transition-colors font-semibold disabled:opacity-50"
             >
               {t(lang, 'run')}
-            </button>
+            </RippleButton>
             {!isSubmitted && (
-              <button
+              <RippleButton
                 onClick={handleSubmit}
                 disabled={!isReady}
                 className="px-8 py-2 bg-accent text-bg font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
               >
                 {t(lang, 'submit')}
-              </button>
+              </RippleButton>
             )}
           </div>
 
@@ -224,12 +225,12 @@ export default function ChallengeView() {
                     <X className="w-5 h-5" /> {t(lang, 'someTestsFailed')}
                   </span>
                 )}
-                <button
+                <RippleButton
                   onClick={handleCompleteQuestion}
                   className="px-6 py-2 bg-accent text-bg font-bold rounded-xl hover:opacity-90 transition-colors ml-auto"
                 >
                   {currentQuestionIndex < (challenge?.questions.length ?? 1) - 1 ? t(lang, 'nextQuestion') : t(lang, 'viewResults')}
-                </button>
+                </RippleButton>
               </div>
               <div className="bg-screen border border-border rounded-xl p-4 text-[14px]">
                 <span className="text-muted font-bold block mb-1">{t(lang, 'explanation')}:</span>
@@ -254,12 +255,12 @@ export default function ChallengeView() {
   const renderSimpleQuestionControls = () => (
     <div className="mt-8 pt-6 border-t border-border flex flex-col gap-4">
       {!isSubmitted ? (
-        <button
+        <RippleButton
           onClick={handleSubmit}
           className="px-8 py-2 bg-accent text-bg font-bold rounded-xl hover:opacity-90 transition-opacity self-start"
         >
           {t(lang, 'submitAnswer')}
-        </button>
+        </RippleButton>
       ) : (
         <div className="flex flex-col gap-4 animate-in fade-in">
           <div className="flex items-center gap-4">
@@ -272,12 +273,12 @@ export default function ChallengeView() {
                 <X className="w-5 h-5" /> {t(lang, 'incorrect')}
               </span>
             )}
-            <button
+            <RippleButton
               onClick={handleCompleteQuestion}
               className="px-6 py-2 bg-accent text-bg font-bold rounded-xl hover:opacity-90 transition-colors ml-auto"
             >
               {currentQuestionIndex < (challenge?.questions.length ?? 1) - 1 ? t(lang, 'nextQuestion') : t(lang, 'viewResults')}
-            </button>
+            </RippleButton>
           </div>
           <div className="bg-surface border border-border rounded-xl p-4 text-[14px]">
             <span className="text-muted font-bold block mb-1">{t(lang, 'explanation')}:</span>
@@ -293,8 +294,9 @@ export default function ChallengeView() {
       <div className="bg-surface-2 border border-border rounded-2xl p-6 flex flex-col flex-1">
         <div className="space-y-3 mt-4">
           {(lang === 'th' && q.options_th ? q.options_th : q.options).map((opt: string, i: number) => (
-            <button
+            <RippleButton
               key={i}
+              hoverScale={1}
               onClick={() => !isSubmitted && setSelectedOption(i)}
               disabled={isSubmitted}
               className={clsx(
@@ -315,7 +317,7 @@ export default function ChallengeView() {
                 </div>
                 <span className="text-text font-sans text-[15px]">{opt}</span>
               </div>
-            </button>
+            </RippleButton>
           ))}
         </div>
         {renderSimpleQuestionControls()}
@@ -455,12 +457,13 @@ export default function ChallengeView() {
                 </div>
               </div>
 
-              <button
+              <RippleButton
                 onClick={() => router.push('/challenge')}
+                hoverScale={1}
                 className="w-full py-4 bg-accent text-bg font-bold text-[17px] rounded-2xl hover:opacity-90 transition-opacity"
               >
                 {t(lang, 'finish')}
-              </button>
+              </RippleButton>
             </motion.div>
           </motion.div>
         )}

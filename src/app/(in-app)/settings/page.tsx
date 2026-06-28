@@ -4,6 +4,7 @@ import { useAppContext } from "../../ClientProvider";
 import { Toggle } from "@/components/ui/Toggle";
 import { ThemeTogglerButton } from "@/components/ui/theme-toggler";
 import { useRouter } from "next/navigation";
+import { RippleButton } from "@/components/ui/RippleButton";
 
 export default function SettingsPage() {
   const { state, updateState } = useAppContext();
@@ -124,12 +125,12 @@ export default function SettingsPage() {
                 <div className="text-text font-medium">Log Out</div>
                 <div className="text-muted text-[13px] mt-1">Sign out of your current session.</div>
               </div>
-              <button 
+              <RippleButton
                 onClick={handleLogout}
                 className="px-6 py-2 bg-c-danger/10 text-c-danger hover:bg-c-danger/20 font-bold rounded-lg transition-colors border border-c-danger/20"
               >
                 Log Out
-              </button>
+              </RippleButton>
             </div>
           </div>
         </div>

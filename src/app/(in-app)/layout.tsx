@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import clsx from "clsx";
 import { lessons } from "@/lib/content/lessons";
+import { RippleButton } from "@/components/ui/RippleButton";
 
 export default function InAppLayout({ children }: { children: React.ReactNode }) {
   const { state, updateState } = useAppContext();
@@ -161,12 +162,12 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
 
           <div className="flex items-center gap-3 relative">
             <span className="text-sm font-medium">{state?.profile.name}</span>
-            <button 
+            <RippleButton
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="w-8 h-8 rounded-full bg-accent/20 text-accent font-semibold flex items-center justify-center hover:bg-accent/30 transition-colors"
             >
               <span className="text-sm">{initials}</span>
-            </button>
+            </RippleButton>
 
             {/* Profile Dropdown */}
             {showProfileMenu && (
@@ -210,10 +211,10 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
                       <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100" />
                     </Link>
                     <div className="h-px bg-border my-1" />
-                    <button onClick={handleLogout} className="px-3 py-2 text-c-danger hover:bg-c-danger/10 rounded-md flex justify-between items-center text-left transition-colors">
+                    <RippleButton hoverScale={1} onClick={handleLogout} className="px-3 py-2 text-c-danger hover:bg-c-danger/10 rounded-md flex justify-between items-center text-left transition-colors">
                       <span>Log out</span>
                       <ChevronRight className="w-4 h-4 opacity-50" />
-                    </button>
+                    </RippleButton>
                   </div>
                 </div>
               </>
@@ -263,13 +264,13 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
               Do you want to run <span className="text-accent font-mono">{confirmNode.name}</span>?
             </p>
             <div className="flex gap-3 justify-end">
-              <button 
+              <RippleButton
                 onClick={() => setConfirmNode(null)}
                 className="px-5 py-2 rounded-lg font-medium text-muted hover:text-text hover:bg-border transition-colors"
               >
                 Cancel
-              </button>
-              <button 
+              </RippleButton>
+              <RippleButton
                 onClick={() => {
                   router.push(confirmNode.path);
                   setConfirmNode(null);
@@ -277,7 +278,7 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
                 className="px-5 py-2 rounded-lg font-bold bg-accent text-bg hover:opacity-90 transition-opacity shadow-[0_0_15px_rgba(255,212,59,0.2)]"
               >
                 Run
-              </button>
+              </RippleButton>
             </div>
           </div>
         </div>

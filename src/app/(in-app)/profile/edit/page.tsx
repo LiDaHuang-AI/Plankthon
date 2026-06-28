@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { User, AtSign, ChevronLeft, Save } from "lucide-react";
+import { RippleButton } from "@/components/ui/RippleButton";
 
 export default function EditProfile() {
   const { state, updateState } = useAppContext();
@@ -118,13 +119,13 @@ export default function EditProfile() {
               >
                 Cancel
               </Link>
-              <button
+              <RippleButton
                 type="submit"
                 className="px-5 py-2.5 rounded-lg font-semibold text-bg bg-accent hover:opacity-90 transition-opacity flex items-center gap-2 shadow-lg shadow-accent/20"
               >
                 <Save className="w-4 h-4" />
                 <span>Save Changes</span>
-              </button>
+              </RippleButton>
             </div>
           </form>
         </div>
