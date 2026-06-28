@@ -101,7 +101,12 @@ export function useAppState() {
     setState((prev) => {
       if (!prev) return prev;
       const next = updater(prev);
-      const { plankyChat, coding, ...savableState } = next;
+      // Persist everything except the AI chat and the transient terminal output.
+      // The coding sandbox's files + active tab ARE saved, so multi-file work
+      // survives a page reload; only the ephemeral terminal log is dropped.
+      const { plankyChat, coding, ...rest } = next;
+      const { terminalLines, ...codingToSave } = coding;
+      const savableState = { ...rest, coding: codingToSave };
       localStorage.setItem("plankthon", JSON.stringify(savableState));
       return next;
     });
