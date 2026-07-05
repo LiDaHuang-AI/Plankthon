@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { User, AtSign, ChevronLeft, Save } from "lucide-react";
 import { RippleButton } from "@/components/ui/RippleButton";
+import { t } from "@/lib/i18n";
 
 export default function EditProfile() {
   const { state, updateState } = useAppContext();
@@ -49,7 +50,7 @@ export default function EditProfile() {
           <Link href="/profile" className="p-2 -ml-2 rounded-lg hover:bg-surface text-muted hover:text-text transition-colors">
             <ChevronLeft className="w-5 h-5" />
           </Link>
-          <h1 className="text-2xl font-bold text-text tracking-tight">Edit Profile</h1>
+          <h1 className="text-2xl font-bold text-text tracking-tight">{t(state?.settings?.language, 'editProfile')}</h1>
         </div>
 
         <div className="bg-surface-2 border border-border rounded-2xl p-6 md:p-8 shadow-sm">
@@ -58,7 +59,7 @@ export default function EditProfile() {
             {/* Name Field */}
             <div className="space-y-2">
               <label htmlFor="name" className="block text-sm font-semibold text-text">
-                Display Name
+                {t(state?.settings?.language, 'displayName')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted">
@@ -73,13 +74,13 @@ export default function EditProfile() {
                   placeholder="e.g. Grace Hopper"
                 />
               </div>
-              <p className="text-xs text-muted">This is your public display name.</p>
+              <p className="text-xs text-muted">{t(state?.settings?.language, 'displayNameDesc')}</p>
             </div>
 
             {/* Handle Field */}
             <div className="space-y-2">
               <label htmlFor="handle" className="block text-sm font-semibold text-text">
-                Username Handle
+                {t(state?.settings?.language, 'usernameHandle')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted">
@@ -94,21 +95,21 @@ export default function EditProfile() {
                   placeholder="e.g. gracehopper"
                 />
               </div>
-              <p className="text-xs text-muted">Unique identifier used in leaderboards or sharing.</p>
+              <p className="text-xs text-muted">{t(state?.settings?.language, 'usernameDesc')}</p>
             </div>
 
             {/* Email (Read-only for now unless integrated with auth) */}
             <div className="space-y-2 opacity-70">
               <label className="block text-sm font-semibold text-text">
-                Email Address
+                {t(state?.settings?.language, 'emailAddress')}
               </label>
               <input
                 type="text"
                 disabled
-                value={state.account?.email || "No email registered (Local Mode)"}
+                value={state.account?.email || t(state?.settings?.language, 'noEmail')}
                 className="w-full bg-surface/50 border border-border rounded-lg px-4 py-2.5 text-muted cursor-not-allowed"
               />
-              <p className="text-xs text-muted">Email address cannot be changed from this screen.</p>
+              <p className="text-xs text-muted">{t(state?.settings?.language, 'emailDesc')}</p>
             </div>
 
             {/* Actions */}
@@ -117,14 +118,14 @@ export default function EditProfile() {
                 href="/profile"
                 className="px-5 py-2.5 rounded-lg font-semibold text-text bg-surface hover:bg-border transition-colors border border-border"
               >
-                Cancel
+                {t(state?.settings?.language, 'cancel')}
               </Link>
               <RippleButton
                 type="submit"
                 className="px-5 py-2.5 rounded-lg font-semibold text-bg bg-accent hover:opacity-90 transition-opacity flex items-center gap-2 shadow-lg shadow-accent/20"
               >
                 <Save className="w-4 h-4" />
-                <span>Save Changes</span>
+                <span>{t(state?.settings?.language, 'save')}</span>
               </RippleButton>
             </div>
           </form>

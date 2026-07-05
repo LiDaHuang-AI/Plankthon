@@ -66,6 +66,9 @@ function CursorProvider({ children, global = false }: CursorProviderProps) {
 
     if (global) {
       const handlePointerMove = (e: PointerEvent) => {
+        // Touch/pen have no hovering cursor — activating on them would leave
+        // the decorative arrow stuck at the last tap point on phones.
+        if (e.pointerType !== 'mouse') return;
         setCursorPos({ x: e.clientX, y: e.clientY });
         setActive(true);
       };
@@ -109,6 +112,7 @@ function CursorProvider({ children, global = false }: CursorProviderProps) {
       }
 
       const handlePointerMove = (e: PointerEvent) => {
+        if (e.pointerType !== 'mouse') return;
         const rect = parent.getBoundingClientRect();
         setCursorPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
         setActive(true);
@@ -160,7 +164,7 @@ function CursorContainer({
   const { containerRef, global, active } = useCursor();
   React.useImperativeHandle(ref, () => containerRef.current as HTMLDivElement);
 
-  const Component = (asChild ? Slot : motion.div) as React.ElementType;
+  const Component = (asChild ? Slot : motion.div) as any;
 
   return (
     <Component
@@ -209,7 +213,7 @@ function Cursor({ ref, asChild = false, style, ...props }: CursorProps) {
     y.set(cursorPos.y);
   }, [cursorPos, x, y]);
 
-  const Component = (asChild ? Slot : motion.div) as React.ElementType;
+  const Component = (asChild ? Slot : motion.div) as any;
 
   return (
     <AnimatePresence>
@@ -359,7 +363,7 @@ function CursorFollow({
     y.set(cursorPos.y - offset.y + cursorHeight / 2);
   }, [calculateOffset, cursorPos, cursorRef, x, y]);
 
-  const Component = (asChild ? Slot : motion.div) as React.ElementType;
+  const Component = (asChild ? Slot : motion.div) as any;
 
   return (
     <AnimatePresence>

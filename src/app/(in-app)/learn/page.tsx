@@ -4,7 +4,7 @@ import { useAppContext } from "../../ClientProvider";
 import { lessons } from "@/lib/content/lessons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { Lock, CheckCircle, Circle } from "lucide-react";
 
@@ -14,6 +14,15 @@ export default function LearnListing() {
   const [inputValue, setInputValue] = useState("");
   const [history, setHistory] = useState<{text: string, type: "command" | "error"}[]>([]);
   const lang = state?.settings?.language || 'en';
+
+  // Auto-focus the terminal prompt only on mouse devices — on phones this
+  // would pop the keyboard open every time the page is visited.
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      inputRef.current?.focus();
+    }
+  }, []);
 
   // Group lessons by chapter
   const chapters = [1, 2, 3];
@@ -47,8 +56,9 @@ export default function LearnListing() {
                       <span className="text-muted">-----</span>
                       {isUnlocked ? (
                         <span
+                          onClick={() => router.push(`/learn/${lesson.id}`)}
                           className={clsx(
-                            "flex items-center gap-2",
+                            "flex items-center gap-2 cursor-pointer hover:text-accent active:text-accent transition-colors",
                             isCompleted ? "text-c-string" : "text-text"
                           )}
                         >
@@ -109,13 +119,13 @@ export default function LearnListing() {
             setInputValue("");
           }}
         >
-          <span>Plankthon:\Home\Learn\USER&gt;</span>
+          <span className="flex-shrink-0">Plankthon:\Home\Learn\USER&gt;</span>
           <input
+            ref={inputRef}
             type="text"
             value={inputValue}
             onChange={e => setInputValue(e.target.value)}
-            className="bg-transparent border-none outline-none text-text font-mono flex-1 caret-accent"
-            autoFocus
+            className="bg-transparent border-none outline-none text-text font-mono flex-1 min-w-0 caret-accent"
             spellCheck={false}
             autoComplete="off"
           />

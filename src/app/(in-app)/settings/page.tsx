@@ -5,6 +5,7 @@ import { Toggle } from "@/components/ui/Toggle";
 import { ThemeTogglerButton } from "@/components/ui/theme-toggler";
 import { useRouter } from "next/navigation";
 import { RippleButton } from "@/components/ui/RippleButton";
+import { t } from "@/lib/i18n";
 
 export default function SettingsPage() {
   const { state, updateState } = useAppContext();
@@ -38,13 +39,13 @@ export default function SettingsPage() {
         {/* Account */}
         <div className="bg-surface-2 border border-border rounded-xl overflow-hidden shadow-lg">
           <div className="bg-surface px-6 py-3 border-b border-border flex items-center gap-2 font-mono">
-            <span className="text-c-comment"># account</span>
+            <span className="text-c-comment"># {t(state?.settings?.language, 'account').toLowerCase()}</span>
           </div>
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-text font-medium">Username</div>
-                <div className="text-muted text-[13px] mt-1">Your display name across Plankthon.</div>
+                <div className="text-text font-medium">{t(state?.settings?.language, 'name')}</div>
+                <div className="text-muted text-[13px] mt-1">{t(state?.settings?.language, 'usernameSettingsDesc')}</div>
               </div>
               <div className="text-c-string font-mono bg-surface-2 border border-border px-4 py-2 rounded-lg">
                 "{state.profile.name}"
@@ -56,13 +57,13 @@ export default function SettingsPage() {
         {/* Appearance */}
         <div className="bg-surface-2 border border-border rounded-xl overflow-hidden shadow-lg">
           <div className="bg-surface px-6 py-3 border-b border-border flex items-center gap-2 font-mono">
-            <span className="text-c-comment"># appearance</span>
+            <span className="text-c-comment"># {t(state?.settings?.language, 'appearance').toLowerCase()}</span>
           </div>
           <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-text font-medium">Theme</div>
-                <div className="text-muted text-[13px] mt-1">Select your preferred color scheme.</div>
+                <div className="text-text font-medium">{t(state?.settings?.language, 'theme')}</div>
+                <div className="text-muted text-[13px] mt-1">{t(state?.settings?.language, 'themeDesc')}</div>
               </div>
               <ThemeTogglerButton />
             </div>
@@ -73,40 +74,28 @@ export default function SettingsPage() {
         {/* Preferences */}
         <div className="bg-surface-2 border border-border rounded-xl overflow-hidden shadow-lg">
           <div className="bg-surface px-6 py-3 border-b border-border flex items-center gap-2 font-mono">
-            <span className="text-c-comment"># preferences</span>
+            <span className="text-c-comment"># {t(state?.settings?.language, 'preferences').toLowerCase()}</span>
           </div>
           <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-text font-medium">Sound Effects</div>
-                <div className="text-muted text-[13px] mt-1">Play sounds on success or failure.</div>
+                <div className="text-text font-medium">{t(state?.settings?.language, 'soundEffects')}</div>
+                <div className="text-muted text-[13px] mt-1">{t(state?.settings?.language, 'soundEffectsDesc')}</div>
               </div>
               <Toggle 
-                options={[{ value: "on", label: "On" }, { value: "off", label: "Off" }]}
+                options={[{ value: "on", label: t(state?.settings?.language, 'on') }, { value: "off", label: t(state?.settings?.language, 'off') }]}
                 value={state.settings.sound ? "on" : "off"}
                 onChange={(val) => updateSetting("sound", val === "on")}
               />
             </div>
-            <div className="h-px bg-border w-full"></div>
+
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-text font-medium">Notifications</div>
-                <div className="text-muted text-[13px] mt-1">Receive alerts for achievements.</div>
+                <div className="text-text font-medium">{t(state?.settings?.language, 'language')}</div>
+                <div className="text-muted text-[13px] mt-1">{t(state?.settings?.language, 'languageDesc')}</div>
               </div>
               <Toggle 
-                options={[{ value: "on", label: "On" }, { value: "off", label: "Off" }]}
-                value={state.settings.notifications ? "on" : "off"}
-                onChange={(val) => updateSetting("notifications", val === "on")}
-              />
-            </div>
-            <div className="h-px bg-border w-full"></div>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-text font-medium">Language</div>
-                <div className="text-muted text-[13px] mt-1">Choose your curriculum language.</div>
-              </div>
-              <Toggle 
-                options={[{ value: "en", label: "English" }, { value: "th", label: "Thai" }]}
+                options={[{ value: "en", label: t(state?.settings?.language, 'english') }, { value: "th", label: t(state?.settings?.language, 'thai') }]}
                 value={state.settings.language}
                 onChange={(val) => updateSetting("language", val)}
               />
@@ -117,19 +106,19 @@ export default function SettingsPage() {
         {/* Session */}
         <div className="bg-surface-2 border border-border rounded-xl overflow-hidden shadow-lg">
           <div className="bg-surface px-6 py-3 border-b border-border flex items-center gap-2 font-mono">
-            <span className="text-c-comment"># session</span>
+            <span className="text-c-comment"># {t(state?.settings?.language, 'session').toLowerCase()}</span>
           </div>
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-text font-medium">Log Out</div>
-                <div className="text-muted text-[13px] mt-1">Sign out of your current session.</div>
+                <div className="text-text font-medium">{t(state?.settings?.language, 'logOut')}</div>
+                <div className="text-muted text-[13px] mt-1">{t(state?.settings?.language, 'logOutDesc')}</div>
               </div>
               <RippleButton
                 onClick={handleLogout}
                 className="px-6 py-2 bg-c-danger/10 text-c-danger hover:bg-c-danger/20 font-bold rounded-lg transition-colors border border-c-danger/20"
               >
-                Log Out
+                {t(state?.settings?.language, 'logOut')}
               </RippleButton>
             </div>
           </div>

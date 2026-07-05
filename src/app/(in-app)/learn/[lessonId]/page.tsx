@@ -10,6 +10,7 @@ import { usePyodide } from "@/lib/pyodide/client";
 import { t } from "@/lib/i18n";
 import clsx from "clsx";
 import { RippleButton } from "@/components/ui/RippleButton";
+import { playSound } from "@/lib/sound";
 
 export default function LessonView() {
   const { lessonId } = useParams();
@@ -41,10 +42,11 @@ export default function LessonView() {
     }
   }, [currentPageIndex, page]);
 
-  if (!lesson || !page) return <div>Lesson not found</div>;
+  if (!lesson || !page) return <div>{t(lang, 'lessonNotFound')}</div>;
 
   const handleRun = async () => {
     if (!isReady) return;
+    playSound("run");
     try {
       let fullOutput = "";
       await runCode(code, undefined, (text) => {
@@ -55,14 +57,18 @@ export default function LessonView() {
       setOutput(fullOutput);
       if (page.exercise && fullOutput === page.exercise.check) {
         setIsSuccess(true);
+        playSound("correct");
       } else if (!page.exercise) {
         setIsSuccess(true); // Always succeed if no exercise
+        playSound("correct");
       } else {
         setIsSuccess(false);
+        playSound("wrong");
       }
     } catch (e: any) {
       setOutput(e.message);
       setIsSuccess(false);
+      playSound("error");
     }
   };
 
@@ -71,6 +77,7 @@ export default function LessonView() {
       setCurrentPageIndex(prev => prev + 1);
     } else {
       // Complete lesson
+      playSound("complete");
       updateState(prev => {
         const completed = new Set(prev.progress.lessonsCompleted);
         completed.add(lesson.id);
@@ -99,13 +106,13 @@ export default function LessonView() {
       <header className="p-6 flex justify-between items-start">
         <div>
           <div className="text-muted mb-2 font-mono text-[14px]">
-            Plankthon\Home\Learn\Chapter {lesson.chapter}\ {lesson.title}
+            Plankthon\Home\Learn\{t(lang, 'chapter')} {lesson.chapter}\ {lang === 'th' && lesson.title_th ? lesson.title_th : lesson.title}
           </div>
           <h1 className="text-3xl font-bold text-text mb-2">
             {lang === 'th' && page.title_th ? page.title_th : page.title} <span className="text-muted text-xl">({currentPageIndex + 1}/{lesson.pages.length})</span>
           </h1>
           <div className="text-muted text-sm">
-            Chapter {lesson.chapter}: {lesson.title}
+            {t(lang, 'chapter')} {lesson.chapter}: {lang === 'th' && lesson.title_th ? lesson.title_th : lesson.title}
           </div>
           <div className="w-64 h-1 mt-4 bg-surface-2 rounded-full overflow-hidden">
             <div 
@@ -157,7 +164,7 @@ export default function LessonView() {
               </>
             ) : (
               <>
-                <p className="text-text text-[14px] mb-4">Run the example code to see how it works!</p>
+                <p className="text-text text-[14px] mb-4">{t(lang, 'runExampleCode')}</p>
                 <CodeBlock code={code} />
               </>
             )}
@@ -208,14 +215,14 @@ export default function LessonView() {
           href="/learn"
           className="px-6 py-2 bg-transparent border border-border text-text rounded-xl hover:bg-border transition-colors"
         >
-          Back to Menu
+          {t(lang, 'backToMenu')}
         </Link>
         <RippleButton
           onClick={handleNext}
           disabled={isSuccess !== true}
           className="px-8 py-2 bg-accent text-bg font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          {currentPageIndex < lesson.pages.length - 1 ? t(lang, 'next') : (lang === 'th' ? "เสร็จสิ้นบทเรียน ->" : "Complete Lesson ->")}
+          {currentPageIndex < lesson.pages.length - 1 ? t(lang, 'next') : t(lang, 'completeLesson') + " ->"}
         </RippleButton>
       </footer>
     </div>

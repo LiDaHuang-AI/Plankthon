@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 export function Terminal({
   lines,
-  prompt = "Plankthon:\\Home\\USER>",
+  prompt = "",
   isTyping = false,
   waitingForInput = false,
   onInputSubmit,

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, Suspense } from "react";
 import { Terminal } from "@/components/ui/Terminal";
 import { usePyodide } from "@/lib/pyodide/client";
-import { Play, Square, Trash2, FileCode, RotateCcw, Wand2, Plus, X } from "lucide-react";
+import { Play, Square, Trash2, FileCode, RotateCcw, Wand2, Plus, X, FilePlus, Pencil } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useAppContext } from "../../ClientProvider";
 import CodeMirror from "@uiw/react-codemirror";
@@ -12,6 +12,10 @@ import { oneDark } from "@codemirror/theme-one-dark";
 import { keymap, EditorView } from "@codemirror/view";
 import { Prec } from "@codemirror/state";
 import { lintGutter, setDiagnostics, type Diagnostic } from "@codemirror/lint";
+import { useDialog } from "@/components/ui/Dialog";
+import { RippleButton } from "@/components/ui/RippleButton";
+import { playSound } from "@/lib/sound";
+import { t } from "@/lib/i18n";
 import clsx from "clsx";
 
 const DEFAULT_CODE = 'print("Hello, Planky!")\n';
@@ -21,6 +25,7 @@ type PyFile = { name: string; content: string };
 function CodingSandboxContent() {
   const searchParams = useSearchParams();
   const { state, updateState } = useAppContext();
+  const dialog = useDialog();
 
   const [files, setFiles] = useState<PyFile[]>(() => {
     const f = state?.coding?.files;
@@ -80,6 +85,7 @@ function CodingSandboxContent() {
 
   const handleRun = async () => {
     if (!isReady || isRunning) return;
+    playSound("run");
     setIsRunning(true);
     setIsTyping(true);
     setWaitingForInput(false);
@@ -106,6 +112,7 @@ function CodingSandboxContent() {
       if (e?.message === "__STOPPED__") {
         setTerminalLines((prev) => [...prev, { text: "⛔ Stopped", type: "error" }]);
       } else {
+        playSound("error");
         setTerminalLines((prev) => [...prev, { text: e.message, type: "error" }]);
       }
     } finally {
@@ -122,8 +129,16 @@ function CodingSandboxContent() {
     setIsTyping(true);
   };
 
-  const handleReset = () => {
-    if (window.confirm(`ล้างโค้ดในไฟล์ ${activeName} กลับเป็นค่าเริ่มต้น?`)) {
+  const handleReset = async () => {
+    const ok = await dialog.confirm({
+      title: t(state?.settings?.language, 'resetCodeTitle'),
+      message: t(state?.settings?.language, 'resetCodeMsg').replace('{name}', activeName),
+      confirmText: t(state?.settings?.language, 'ok'),
+      cancelText: t(state?.settings?.language, 'cancel'),
+      danger: true,
+      icon: <Trash2 className="w-5 h-5 text-c-danger" />,
+    });
+    if (ok) {
       setCode(DEFAULT_CODE);
     }
   };
@@ -135,52 +150,105 @@ function CodingSandboxContent() {
       const formatted = await format(code);
       setCode(formatted);
     } catch {
-      setTerminalLines((prev) => [...prev, { text: "⚠ จัดรูปแบบไม่ได้ — โค้ดมี syntax error", type: "error" }]);
+      setTerminalLines((prev) => [...prev, { text: t(state?.settings?.language, 'formatFailed'), type: "error" }]);
     } finally {
       setIsFormatting(false);
     }
   };
 
   // ---- File tab management ----
-  const addFile = () => {
+  const addFile = async () => {
     let n = 1;
     let suggested = `file${n}.py`;
     while (files.some((f) => f.name === suggested)) {
       n++;
       suggested = `file${n}.py`;
     }
-    const input = window.prompt("ชื่อไฟล์ใหม่ (.py)", suggested);
-    if (!input) return;
-    let fname = input.trim();
-    if (!fname.endsWith(".py")) fname += ".py";
-    if (files.some((f) => f.name === fname)) {
-      window.alert("มีไฟล์ชื่อนี้อยู่แล้ว");
-      return;
+    const fname = await dialog.prompt({
+      title: t(state?.settings?.language, 'newFileTitle'),
+      label: t(state?.settings?.language, 'fileNameLabel'),
+      defaultValue: suggested,
+      placeholder: t(state?.settings?.language, 'fileNamePlaceholder'),
+      confirmText: t(state?.settings?.language, 'ok'),
+      cancelText: t(state?.settings?.language, 'cancel'),
+      icon: <FilePlus className="w-5 h-5 text-accent" />,
+      validate: (val) => {
+        const trimmed = val.trim();
+        if (!trimmed) {
+          return t(state?.settings?.language, 'enterFileName');
+        }
+        let nameWithExt = trimmed;
+        if (!nameWithExt.endsWith(".py")) {
+          nameWithExt += ".py";
+        }
+        if (files.some((f) => f.name === nameWithExt)) {
+          return t(state?.settings?.language, 'fileAlreadyExists');
+        }
+        return null;
+      },
+    });
+
+    if (fname) {
+      let nameWithExt = fname.trim();
+      if (!nameWithExt.endsWith(".py")) {
+        nameWithExt += ".py";
+      }
+      setFiles((prev) => [...prev, { name: nameWithExt, content: "" }]);
+      setActiveName(nameWithExt);
     }
-    setFiles((prev) => [...prev, { name: fname, content: "" }]);
-    setActiveName(fname);
   };
 
-  const closeFile = (name: string) => {
+  const closeFile = async (name: string) => {
     if (files.length <= 1) return;
-    if (!window.confirm(`ปิดไฟล์ ${name}?`)) return;
+    const ok = await dialog.confirm({
+      title: t(state?.settings?.language, 'closeFileTitle'),
+      message: t(state?.settings?.language, 'closeFileMsg').replace('{name}', name),
+      confirmText: t(state?.settings?.language, 'ok'),
+      cancelText: t(state?.settings?.language, 'cancel'),
+      danger: true,
+      icon: <Trash2 className="w-5 h-5 text-c-danger" />,
+    });
+    if (!ok) return;
     const remaining = files.filter((f) => f.name !== name);
     setFiles(remaining);
     if (activeName === name) setActiveName(remaining[0]?.name || "main.py");
   };
 
-  const renameFile = (name: string) => {
-    const input = window.prompt("เปลี่ยนชื่อไฟล์", name);
-    if (!input) return;
-    let fname = input.trim();
-    if (!fname.endsWith(".py")) fname += ".py";
-    if (fname === name) return;
-    if (files.some((f) => f.name === fname)) {
-      window.alert("มีไฟล์ชื่อนี้อยู่แล้ว");
-      return;
+  const renameFile = async (name: string) => {
+    const fname = await dialog.prompt({
+      title: t(state?.settings?.language, 'renameFileTitle'),
+      label: t(state?.settings?.language, 'fileNameLabel'),
+      defaultValue: name,
+      placeholder: t(state?.settings?.language, 'fileNamePlaceholder'),
+      confirmText: t(state?.settings?.language, 'ok'),
+      cancelText: t(state?.settings?.language, 'cancel'),
+      icon: <Pencil className="w-5 h-5 text-accent" />,
+      validate: (val) => {
+        const trimmed = val.trim();
+        if (!trimmed) {
+          return t(state?.settings?.language, 'enterFileName');
+        }
+        let nameWithExt = trimmed;
+        if (!nameWithExt.endsWith(".py")) {
+          nameWithExt += ".py";
+        }
+        if (nameWithExt === name) return null;
+        if (files.some((f) => f.name === nameWithExt)) {
+          return t(state?.settings?.language, 'fileAlreadyExists');
+        }
+        return null;
+      },
+    });
+
+    if (fname) {
+      let nameWithExt = fname.trim();
+      if (!nameWithExt.endsWith(".py")) {
+        nameWithExt += ".py";
+      }
+      if (nameWithExt === name) return;
+      setFiles((prev) => prev.map((f) => (f.name === name ? { ...f, name: nameWithExt } : f)));
+      if (activeName === name) setActiveName(nameWithExt);
     }
-    setFiles((prev) => prev.map((f) => (f.name === name ? { ...f, name: fname } : f)));
-    if (activeName === name) setActiveName(fname);
   };
 
   // CodeMirror view ref + latest handleRun/lint for the (stable) extensions
@@ -244,7 +312,7 @@ function CodingSandboxContent() {
                 key={f.name}
                 onClick={() => setActiveName(f.name)}
                 onDoubleClick={() => renameFile(f.name)}
-                title="ดับเบิลคลิกเพื่อเปลี่ยนชื่อ"
+                title={t(state?.settings?.language, 'renameFileTitle')}
                 className={clsx(
                   "group flex items-center gap-2 px-3 py-2.5 border-r border-border text-sm cursor-pointer relative whitespace-nowrap select-none",
                   f.name === activeName ? "bg-surface text-text" : "text-muted hover:text-text"
@@ -254,72 +322,74 @@ function CodingSandboxContent() {
                 <FileCode className={clsx("w-3.5 h-3.5", f.name === activeName ? "text-accent" : "")} />
                 {f.name}
                 {files.length > 1 && (
-                  <button
+                  <RippleButton
                     onClick={(e) => { e.stopPropagation(); closeFile(f.name); }}
                     className="opacity-0 group-hover:opacity-100 hover:text-c-danger transition-opacity"
-                    title="ปิดไฟล์"
+                    title={t(state?.settings?.language, 'closeFileTitle')}
                   >
                     <X className="w-3 h-3" />
-                  </button>
+                  </RippleButton>
                 )}
               </div>
             ))}
-            <button
+            <RippleButton
               onClick={addFile}
-              title="เพิ่มไฟล์ใหม่"
+              title={t(state?.settings?.language, 'newFileTitle')}
               className="px-2.5 text-muted hover:text-text border-r border-border flex items-center"
             >
               <Plus className="w-4 h-4" />
-            </button>
+            </RippleButton>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 ml-auto pr-3 flex-shrink-0">
-            <button
+          <div className="flex items-center gap-0.5 sm:gap-2 ml-auto pr-2 sm:pr-3 flex-shrink-0">
+            <RippleButton
               onClick={handleFormat}
               disabled={!isReady || isFormatting || isRunning}
-              title="จัดรูปแบบโค้ดด้วย Black"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-muted hover:text-text transition-colors disabled:opacity-40"
+              title={t(state?.settings?.language, 'format')}
+              className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-xs font-semibold text-muted hover:text-text transition-colors disabled:opacity-40"
             >
               <Wand2 className="w-3.5 h-3.5" />
-              {isFormatting ? "Formatting…" : "Format"}
-            </button>
-            <button
+              <span className="hidden sm:inline">{isFormatting ? t(state?.settings?.language, 'formatting') : t(state?.settings?.language, 'format')}</span>
+            </RippleButton>
+            <RippleButton
               onClick={handleReset}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-muted hover:text-text transition-colors"
+              title={t(state?.settings?.language, 'reset')}
+              className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-xs font-semibold text-muted hover:text-text transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Reset
-            </button>
-            <button
+              <span className="hidden sm:inline">{t(state?.settings?.language, 'reset')}</span>
+            </RippleButton>
+            <RippleButton
               onClick={() => setTerminalLines([])}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-muted hover:text-text transition-colors"
+              title={t(state?.settings?.language, 'clear')}
+              className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-xs font-semibold text-muted hover:text-text transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              Clear
-            </button>
+              <span className="hidden sm:inline">{t(state?.settings?.language, 'clear')}</span>
+            </RippleButton>
             {isRunning ? (
-              <button
+              <RippleButton
                 onClick={stop}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-c-danger text-white font-bold rounded hover:opacity-90 transition-opacity text-sm"
+                className="flex items-center gap-1.5 px-2.5 sm:px-4 py-1.5 bg-c-danger text-white font-bold rounded hover:opacity-90 transition-opacity text-sm"
               >
                 <Square className="w-3.5 h-3.5 fill-current" />
-                Stop
-              </button>
+                {t(state?.settings?.language, 'stop')}
+              </RippleButton>
             ) : (
-              <button
+              <RippleButton
                 onClick={handleRun}
                 disabled={!isReady}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-accent text-bg font-bold rounded hover:opacity-90 transition-opacity disabled:opacity-50 text-sm shadow-[0_0_10px_rgba(255,212,59,0.2)]"
+                className="flex items-center gap-1.5 px-2.5 sm:px-4 py-1.5 bg-accent text-bg font-bold rounded hover:opacity-90 transition-opacity disabled:opacity-50 text-sm shadow-[0_0_10px_rgba(255,212,59,0.2)]"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
-                {isReady ? "Run" : "Loading…"}
+                {isReady ? t(state?.settings?.language, 'run') : t(state?.settings?.language, 'loading')}
                 {isReady && (
                   <span className="hidden sm:inline text-[10px] font-semibold opacity-70 ml-1 px-1.5 py-0.5 rounded bg-black/20">
                     {runKbd}
                   </span>
                 )}
-              </button>
+              </RippleButton>
             )}
           </div>
         </div>
@@ -343,7 +413,6 @@ function CodingSandboxContent() {
       <div className="flex flex-col min-h-0 shadow-xl rounded-xl ring-1 ring-white/5">
         <Terminal
           lines={terminalLines}
-          prompt="Plankthon:\Home\USER>"
           isTyping={isTyping}
           waitingForInput={waitingForInput}
           onInputSubmit={handleInputSubmit}

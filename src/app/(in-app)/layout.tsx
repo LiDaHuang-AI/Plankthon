@@ -2,13 +2,14 @@
 
 import { useAppContext } from "../ClientProvider";
 import { FileTree, FileNode } from "@/components/ui/FileTree";
-import { User as UserIcon, Monitor, LogOut, ChevronRight } from "lucide-react";
+import { User as UserIcon, Monitor, LogOut, ChevronRight, Home, BookOpen, Trophy, Code, Terminal as TerminalIcon } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import clsx from "clsx";
 import { lessons } from "@/lib/content/lessons";
 import { RippleButton } from "@/components/ui/RippleButton";
+import { t } from "@/lib/i18n";
 
 export default function InAppLayout({ children }: { children: React.ReactNode }) {
   const { state, updateState } = useAppContext();
@@ -90,24 +91,24 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
       path: "/root",
       children: [
         {
-          name: "Home",
+          name: t(state?.settings?.language, 'home'),
           type: "folder",
           path: "/home",
           children: [
             {
-              name: "Learn",
+              name: t(state?.settings?.language, 'learn'),
               type: "folder",
               path: "/learn",
               children: learnChildren
             },
             {
-              name: "Challenge",
+              name: t(state?.settings?.language, 'challenge'),
               type: "folder",
               path: "/challenge",
               children: challengeChildren
             },
-            { name: "Coding", type: "file", path: "/coding" },
-            { name: "Planky", type: "file", path: "/planky" },
+            { name: t(state?.settings?.language, 'coding'), type: "file", path: "/coding" },
+            { name: t(state?.settings?.language, 'planky'), type: "file", path: "/planky" },
           ]
         }
       ]
@@ -155,13 +156,13 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
             <div className="font-bold text-lg tracking-wider">-Plankthon-</div>
             {state?.isAdmin && (
               <div className="text-c-danger font-bold text-xs border border-c-danger px-2 py-0.5 rounded uppercase animate-pulse">
-                Admin Mode
+                {t(state?.settings?.language, 'adminMode')}
               </div>
             )}
           </div>
 
           <div className="flex items-center gap-3 relative">
-            <span className="text-sm font-medium">{state?.profile.name}</span>
+            <span className="text-sm font-medium hidden sm:inline">{state?.profile.name}</span>
             <RippleButton
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="w-8 h-8 rounded-full bg-accent/20 text-accent font-semibold flex items-center justify-center hover:bg-accent/30 transition-colors"
@@ -186,33 +187,33 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
                   <div className="grid grid-cols-3 divide-x divide-border border-b border-border p-3 text-center">
                     <div>
                       <div className="text-accent font-semibold">{state?.progress.challengesSolved.length}</div>
-                      <div className="text-[10px] text-muted">challenges</div>
+                      <div className="text-[10px] text-muted">{t(state?.settings?.language, 'challenges')}</div>
                     </div>
                     <div>
                       <div className="text-text font-semibold">{state?.progress.lessonsCompleted.length}</div>
-                      <div className="text-[10px] text-muted">lessons</div>
+                      <div className="text-[10px] text-muted">{t(state?.settings?.language, 'lessons')}</div>
                     </div>
                     <div>
                       <div className="text-text font-semibold">{state?.progress.accuracy}%</div>
-                      <div className="text-[10px] text-muted">accuracy</div>
+                      <div className="text-[10px] text-muted">{t(state?.settings?.language, 'accuracy')}</div>
                     </div>
                   </div>
                   <div className="flex flex-col p-2">
                     <Link href="/profile" className="px-3 py-2 text-accent bg-border rounded-md flex justify-between items-center group">
-                      <span>View profile</span>
+                      <span>{t(state?.settings?.language, 'viewProfile')}</span>
                       <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100" />
                     </Link>
                     <Link href="/profile/edit" className="px-3 py-2 text-muted hover:text-text rounded-md flex justify-between items-center group transition-colors">
-                      <span>Edit profile</span>
+                      <span>{t(state?.settings?.language, 'editProfile')}</span>
                       <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100" />
                     </Link>
                     <Link href="/settings" className="px-3 py-2 text-muted hover:text-text rounded-md flex justify-between items-center group transition-colors">
-                      <span>Settings</span>
+                      <span>{t(state?.settings?.language, 'settings')}</span>
                       <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100" />
                     </Link>
                     <div className="h-px bg-border my-1" />
                     <RippleButton hoverScale={1} onClick={handleLogout} className="px-3 py-2 text-c-danger hover:bg-c-danger/10 rounded-md flex justify-between items-center text-left transition-colors">
-                      <span>Log out</span>
+                      <span>{t(state?.settings?.language, 'logOut')}</span>
                       <ChevronRight className="w-4 h-4 opacity-50" />
                     </RippleButton>
                   </div>
@@ -255,20 +256,48 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
 
+      {/* Mobile Bottom Navigation - hidden on desktop (sidebar covers it) and on fullscreen lesson/challenge pages */}
+      {!isFullscreen && (
+        <nav className="md:hidden flex-shrink-0 bg-surface border-t border-border grid grid-cols-5 pb-[env(safe-area-inset-bottom)] z-20">
+          {[
+            { href: "/home", icon: Home, label: t(state?.settings?.language, 'home') },
+            { href: "/learn", icon: BookOpen, label: t(state?.settings?.language, 'learn') },
+            { href: "/challenge", icon: Trophy, label: t(state?.settings?.language, 'challenge') },
+            { href: "/coding", icon: Code, label: t(state?.settings?.language, 'coding') },
+            { href: "/planky", icon: TerminalIcon, label: t(state?.settings?.language, 'planky') },
+          ].map(({ href, icon: Icon, label }) => {
+            const isActive = pathname === href || pathname.startsWith(href + "/");
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={clsx(
+                  "flex flex-col items-center justify-center gap-0.5 py-2 transition-colors",
+                  isActive ? "text-accent" : "text-muted active:text-text"
+                )}
+              >
+                <Icon className={clsx("w-5 h-5", isActive && "drop-shadow-[0_0_6px_rgba(250,204,21,0.5)]")} strokeWidth={isActive ? 2.5 : 2} />
+                <span className="text-[10px] font-semibold leading-none">{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      )}
+
       {/* Custom Run Confirm Modal */}
       {confirmNode && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-surface-2 backdrop-blur-sm p-4">
           <div className="bg-surface-2 border border-border p-6 rounded-2xl shadow-2xl max-w-sm w-full">
-            <h3 className="text-xl font-bold text-text mb-2">Run File</h3>
+            <h3 className="text-xl font-bold text-text mb-2">{t(state?.settings?.language, 'runFile')}</h3>
             <p className="text-muted mb-8 text-[15px]">
-              Do you want to run <span className="text-accent font-mono">{confirmNode.name}</span>?
+              {state?.settings?.language === 'th' ? `ต้องการรันไฟล์ ` : `Do you want to run `}<span className="text-accent font-mono">{confirmNode.name}</span>?
             </p>
             <div className="flex gap-3 justify-end">
               <RippleButton
                 onClick={() => setConfirmNode(null)}
                 className="px-5 py-2 rounded-lg font-medium text-muted hover:text-text hover:bg-border transition-colors"
               >
-                Cancel
+                {t(state?.settings?.language, 'cancel')}
               </RippleButton>
               <RippleButton
                 onClick={() => {
@@ -277,7 +306,7 @@ export default function InAppLayout({ children }: { children: React.ReactNode })
                 }}
                 className="px-5 py-2 rounded-lg font-bold bg-accent text-bg hover:opacity-90 transition-opacity shadow-[0_0_15px_rgba(255,212,59,0.2)]"
               >
-                Run
+                {t(state?.settings?.language, 'run')}
               </RippleButton>
             </div>
           </div>

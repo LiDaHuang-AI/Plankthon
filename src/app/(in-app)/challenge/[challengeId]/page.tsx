@@ -5,9 +5,11 @@ import { challenges, Question } from "@/lib/content/challenges";
 import { useParams, useRouter } from "next/navigation";
 import { X, CheckCircle } from "lucide-react";
 import Link from "next/link";
+import { ArrowRight, Terminal as TerminalIcon, CheckCircle2, XCircle, Code2, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { usePyodide } from "@/lib/pyodide/client";
 import { Terminal } from "@/components/ui/Terminal";
+import { playSound } from "@/lib/sound";
 import { t } from "@/lib/i18n";
 import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
@@ -51,7 +53,7 @@ export default function ChallengeView() {
     setTerminalLines([]);
   }, [currentQuestionIndex, question]);
 
-  if (!challenge) return <div>Challenge not found</div>;
+  if (!challenge) return <div>{t(lang, 'challengeNotFound')}</div>;
 
   const getExplanation = () => {
     if (!question) return "";
@@ -83,6 +85,7 @@ export default function ChallengeView() {
 
   const handleRun = async () => {
     if (!isReady || !question || question.type !== "coding") return;
+    playSound("run");
     setIsTyping(true);
     setTerminalLines([{ text: "python solution.py", type: "command" }]);
     try {
@@ -90,6 +93,7 @@ export default function ChallengeView() {
       await runCode(code, undefined, (text) => { fullOutput += text; });
       setTerminalLines(prev => [...prev, { text: fullOutput }]);
     } catch (e: any) {
+      playSound("error");
       setTerminalLines(prev => [...prev, { text: e.message, type: "error" }]);
     }
     setIsTyping(false);
@@ -101,6 +105,7 @@ export default function ChallengeView() {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
       // Challenge complete!
+      playSound("complete");
       setShowSummary(true);
       updateState(prev => {
         const solved = new Set(prev.progress.challengesSolved);
@@ -157,6 +162,7 @@ export default function ChallengeView() {
         } catch (e: any) {
           allPassed = false;
           failedCases++;
+          playSound("error");
           setTerminalLines(prev => [...prev, { text: `test_${i} .......... [FAIL] (Error)`, type: "error" }]);
         }
       }
@@ -166,6 +172,7 @@ export default function ChallengeView() {
       setIsTyping(false);
     }
 
+    playSound(correct ? "correct" : "wrong");
     setTestResult(correct);
     setIsSubmitted(true);
     setResults(prev => [...prev, { id: question.id, correct }]);
@@ -361,7 +368,7 @@ export default function ChallengeView() {
             Plankthon\Home\Challenge\Level {challenge.chapter}\ {lang === 'th' && challenge.title_th ? challenge.title_th : challenge.title}
           </div>
           <h1 className="text-3xl font-bold text-text mb-2">
-            Challenge {(challengeIndex + 1).toString().padStart(2, '0')} — {lang === 'th' && challenge.title_th ? challenge.title_th : challenge.title}
+            {t(lang, 'challengeTitle')} {(challengeIndex + 1).toString().padStart(2, '0')} — {lang === 'th' && challenge.title_th ? challenge.title_th : challenge.title}
           </h1>
           <div className="text-muted text-sm">
             {t(lang, 'question')} {Math.min(currentQuestionIndex + 1, challenge.questions.length)} {t(lang, 'of')} {challenge.questions.length}

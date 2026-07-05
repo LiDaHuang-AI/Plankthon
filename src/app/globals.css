@@ -76,3 +76,22 @@ body {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
 }
+
+/* Landing hero: subtle drifting particle field */
+@keyframes heroFloat {
+  0%, 100% { transform: translateY(0); opacity: 0.45; }
+  50% { transform: translateY(-16px); opacity: 1; }
+}
+.hero-dot {
+  position: absolute;
+  border-radius: 9999px;
+  animation-name: heroFloat;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-duration: 8s;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-dot { animation: none; }
+}

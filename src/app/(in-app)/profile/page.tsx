@@ -3,6 +3,7 @@
 import { useAppContext } from "@/app/ClientProvider";
 import Link from "next/link";
 import { User, Mail, Hash, Target, BookOpen, CheckCircle, Edit3, ChevronLeft } from "lucide-react";
+import { t } from "@/lib/i18n";
 
 export default function ViewProfile() {
   const { state } = useAppContext();
@@ -21,7 +22,7 @@ export default function ViewProfile() {
           <Link href="/" className="p-2 -ml-2 rounded-lg hover:bg-surface text-muted hover:text-text transition-colors">
             <ChevronLeft className="w-5 h-5" />
           </Link>
-          <h1 className="text-2xl font-bold text-text tracking-tight">Profile Overview</h1>
+          <h1 className="text-2xl font-bold text-text tracking-tight">{t(state?.settings?.language, 'profile')}</h1>
         </div>
 
         {/* Profile Card */}
@@ -56,7 +57,7 @@ export default function ViewProfile() {
               className="flex items-center gap-2 bg-surface hover:bg-border border border-border text-text px-6 py-2.5 rounded-xl transition-colors font-semibold group"
             >
               <Edit3 className="w-4 h-4 group-hover:text-accent transition-colors" />
-              <span>Edit Profile</span>
+              <span>{t(state?.settings?.language, 'editProfile')}</span>
             </Link>
           </div>
         </div>
@@ -65,7 +66,7 @@ export default function ViewProfile() {
         <div>
           <h3 className="text-lg font-bold text-text mb-6 flex items-center justify-center gap-2 text-center w-full">
             <Target className="w-5 h-5 text-accent" />
-            <span>Learning Stats</span>
+            <span>{t(state?.settings?.language, 'currentProgress')}</span>
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Challenges */}
@@ -74,7 +75,7 @@ export default function ViewProfile() {
                 <Target className="w-6 h-6" />
               </div>
               <div className="text-3xl font-bold text-text">{state.progress.challengesSolved.length}</div>
-              <div className="text-muted text-xs uppercase tracking-wider mt-1">Challenges Solved</div>
+              <div className="text-muted text-xs uppercase tracking-wider mt-1">{t(state?.settings?.language, 'challengesSolved')}</div>
             </div>
 
             {/* Lessons */}
@@ -83,7 +84,7 @@ export default function ViewProfile() {
                 <BookOpen className="w-6 h-6" />
               </div>
               <div className="text-3xl font-bold text-text">{state.progress.lessonsCompleted.length}</div>
-              <div className="text-muted text-xs uppercase tracking-wider mt-1">Lessons Completed</div>
+              <div className="text-muted text-xs uppercase tracking-wider mt-1">{t(state?.settings?.language, 'lessonsCompleted')}</div>
             </div>
 
             {/* Accuracy */}
@@ -92,7 +93,7 @@ export default function ViewProfile() {
                 <CheckCircle className="w-6 h-6" />
               </div>
               <div className="text-3xl font-bold text-text">{state.progress.accuracy}%</div>
-              <div className="text-muted text-xs uppercase tracking-wider mt-1">Average Accuracy</div>
+              <div className="text-muted text-xs uppercase tracking-wider mt-1">{t(state?.settings?.language, 'accuracy')}</div>
             </div>
           </div>
         </div>

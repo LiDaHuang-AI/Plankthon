@@ -4,6 +4,7 @@ import { useAppContext } from "../../ClientProvider";
 import Link from "next/link";
 import { Terminal as TerminalIcon, BookOpen, Trophy, Code, Play } from "lucide-react";
 import { Terminal } from "@/components/ui/Terminal";
+import { ActivityHeatmap } from "@/components/ui/ActivityHeatmap";
 import { lessons } from "@/lib/content/lessons";
 
 export default function HomePage() {
@@ -22,15 +23,15 @@ export default function HomePage() {
     <div className="p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
       
       {/* Profile Header */}
-      <div className="flex items-center gap-6 mb-2 bg-surface-2 border border-border rounded-3xl p-6 relative overflow-hidden">
+      <div className="flex items-center gap-4 sm:gap-6 mb-2 bg-surface-2 border border-border rounded-3xl p-5 sm:p-6 relative overflow-hidden">
         <div className="absolute right-0 top-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-        <div className="w-20 h-20 rounded-full bg-accent text-bg flex flex-shrink-0 items-center justify-center text-3xl font-bold shadow-[0_0_30px_rgba(250,204,21,0.3)] z-10">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-accent text-bg flex flex-shrink-0 items-center justify-center text-2xl sm:text-3xl font-bold shadow-[0_0_30px_rgba(250,204,21,0.3)] z-10">
           {state?.profile.name ? state.profile.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : "U"}
         </div>
-        <div className="flex flex-col z-10">
-          <h1 className="text-3xl font-bold text-text mb-1 tracking-tight">{state?.profile.name || "New User"}</h1>
-          <div className="flex items-center gap-3 text-sm mt-1">
-            <span className="text-accent font-medium px-2.5 py-1 bg-accent/10 rounded-md border border-accent/20 shadow-sm">{state?.account?.email || "user@example.com"}</span>
+        <div className="flex flex-col z-10 min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-text mb-1 tracking-tight truncate">{state?.profile.name || "New User"}</h1>
+          <div className="flex items-center gap-3 text-sm mt-1 min-w-0">
+            <span className="text-accent font-medium px-2.5 py-1 bg-accent/10 rounded-md border border-accent/20 shadow-sm truncate">{state?.account?.email || "user@example.com"}</span>
           </div>
         </div>
       </div>
@@ -97,6 +98,8 @@ export default function HomePage() {
           <span className="font-semibold text-text">Plank AI</span>
         </Link>
       </div>
+
+      {state && <ActivityHeatmap state={state} />}
 
     </div>
   );

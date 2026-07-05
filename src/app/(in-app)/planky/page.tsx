@@ -6,6 +6,7 @@ import { usePyodide } from "@/lib/pyodide/client";
 import { useRouter } from "next/navigation";
 import { useAppContext } from "../../ClientProvider";
 import { RippleButton } from "@/components/ui/RippleButton";
+import { playSound } from "@/lib/sound";
 
 type ChatMessage = {
   id: string;
@@ -86,6 +87,7 @@ export default function PlankyChat() {
         text,
         code
       }]);
+      playSound("reply");
     } catch (e: any) {
       setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: "planky", text: "Error connecting to Plank AI." }]);
     }
