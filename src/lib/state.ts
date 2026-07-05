@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 export type State = {
-  account: { email: string; passwordHash: string } | null;
+  account: { email: string } | null;
   loggedIn: boolean;
   profile: { name: string; handle: string; avatar: string };
   progress: {
@@ -13,12 +13,12 @@ export type State = {
     accuracy: number;
     currentChapter: number;
     lastVisited?: string;
+    activityLog: string[];
   };
   settings: {
     theme: "dark" | "light";
     fontSize: number;
     sound: boolean;
-    notifications: boolean;
     language: "en" | "th";
     reducedMotion: boolean;
   };
@@ -42,12 +42,12 @@ const DEFAULT_STATE: State = {
     challengesSolved: [],
     accuracy: 100,
     currentChapter: 1,
+    activityLog: [],
   },
   settings: {
     theme: "dark",
     fontSize: 14,
     sound: true,
-    notifications: true,
     language: "en",
     reducedMotion: false,
   },

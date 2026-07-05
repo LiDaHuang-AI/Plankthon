@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { GEMINI_MODELS } from "@/lib/geminiModels";
 
 export async function POST(req: Request) {
   try {
@@ -56,7 +57,7 @@ Style:
 
     // Try a reliable model first; Gemini returns 503/429/5xx when a model is
     // overloaded or rate-limited on the free tier, so fall back automatically.
-    const MODELS = ["gemini-2.5-flash", "gemini-3.5-flash"];
+    const MODELS = GEMINI_MODELS;
     let lastStatus = 0;
 
     for (const model of MODELS) {

@@ -8,104 +8,163 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useAppContext } from "../ClientProvider";
 import { CodeBlock } from "@/components/ui/CodeBlock";
 import { RippleButton } from "@/components/ui/RippleButton";
+import { t } from "@/lib/i18n";
 
 export default function AuthPage() {
   const router = useRouter();
-  const { updateState } = useAppContext();
+  const { state, updateState } = useAppContext();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateState((prev) => ({
-      ...prev,
-      loggedIn: true,
-      account: { email, passwordHash: "mock" }
-    }));
-    router.push("/home");
+  const lang = state?.settings?.language;
+
+  // Record the new account in the global user count (deduped server-side by
+  // hash). Fire-and-forget: never block or fail the auth flow on it.
+  const recordUser = (addr: string) => {
+    if (!addr) return;
+    fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: addr }),
+    }).catch(() => {});
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const handle = "@" + email.split("@")[0].toLowerCase();
-    updateState((prev) => ({
-      ...prev,
-      loggedIn: true,
-      account: { email, passwordHash: "mock" },
-      profile: { name: name || "New User", handle, avatar: "" }
-    }));
-    router.push("/home");
+    setError("");
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error === "invalid" ? t(lang, 'invalidCredentials') : t(lang, 'authGenericError'));
+        return;
+      }
+      updateState((prev) => ({
+        ...prev,
+        loggedIn: true,
+        account: { email: data.email },
+      }));
+      router.push("/home");
+    } catch {
+      setError(t(lang, 'authGenericError'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (password.length < 8) {
+      setError(t(lang, 'passwordTooShort'));
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error === "exists" ? t(lang, 'emailAlreadyRegistered') : t(lang, 'authGenericError'));
+        return;
+      }
+      recordUser(data.email);
+      const handle = "@" + data.email.split("@")[0].toLowerCase();
+      updateState((prev) => ({
+        ...prev,
+        loggedIn: true,
+        account: { email: data.email },
+        profile: { name: data.name || "New User", handle, avatar: "" }
+      }));
+      router.push("/home");
+    } catch {
+      setError(t(lang, 'authGenericError'));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const loginContent = (
     <form onSubmit={handleLogin} className="flex flex-col gap-5 mt-2">
       <div className="mb-4 text-center">
-        <h2 className="text-2xl font-bold text-text mb-2 tracking-tight">Welcome back</h2>
-        <p className="text-[14px] text-muted">Enter your credentials to access your account.</p>
+        <h2 className="text-2xl font-bold text-text mb-2 tracking-tight">{t(state?.settings?.language, 'welcomeBack')}</h2>
+        <p className="text-[14px] text-muted">{t(state?.settings?.language, 'enterCredentials')}</p>
       </div>
       <div className="flex flex-col gap-2">
-        <label className="text-[13px] font-medium text-text ml-1">Email</label>
+        <label className="text-[13px] font-medium text-text ml-1">{t(state?.settings?.language, 'email')}</label>
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-muted group-focus-within:text-accent transition-colors">
             <Mail size={18} strokeWidth={2.5} />
           </div>
-          <input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="m@example.com" className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-border border border-border text-text text-sm outline-none focus:border-accent/50 focus:bg-border transition-all placeholder:text-muted shadow-inner" />
+          <input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="m@example.com" className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-border border border-border text-text text-[16px] outline-none focus:border-accent/50 focus:bg-border transition-all placeholder:text-muted shadow-inner" />
         </div>
       </div>
       <div className="flex flex-col gap-2">
-        <label className="text-[13px] font-medium text-text ml-1">Password</label>
+        <label className="text-[13px] font-medium text-text ml-1">{t(state?.settings?.language, 'password')}</label>
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-muted group-focus-within:text-accent transition-colors">
             <Lock size={18} strokeWidth={2.5} />
           </div>
-          <input required type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-border border border-border text-text text-sm outline-none focus:border-accent/50 focus:bg-border transition-all placeholder:text-muted shadow-inner" />
+          <input required type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-border border border-border text-text text-[16px] outline-none focus:border-accent/50 focus:bg-border transition-all placeholder:text-muted shadow-inner" />
         </div>
       </div>
-      <button type="submit" className="group flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-accent text-black font-bold text-[15px] mt-4 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(250,204,21,0.2)] hover:shadow-[0_0_25px_rgba(250,204,21,0.4)]">
-        Log in <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+      {error && <p className="text-center text-[13px] text-red-400 -mt-2">{error}</p>}
+      <button type="submit" disabled={submitting} className="group flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-accent text-black font-bold text-[15px] mt-4 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(250,204,21,0.2)] hover:shadow-[0_0_25px_rgba(250,204,21,0.4)] disabled:opacity-60 disabled:pointer-events-none">
+        {submitting ? t(state?.settings?.language, 'loggingIn') : <>{t(state?.settings?.language, 'logIn')} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /></>}
       </button>
-      <a href="#" onClick={(e) => { e.preventDefault(); setIsModalOpen(true); }} className="text-center text-[13px] text-muted hover:text-text mt-1 transition-colors">Forgot your password?</a>
+      <a href="#" onClick={(e) => { e.preventDefault(); setIsModalOpen(true); }} className="text-center text-[13px] text-muted hover:text-text mt-1 transition-colors">{t(state?.settings?.language, 'forgotPassword')}</a>
     </form>
   );
 
   const registerContent = (
     <form onSubmit={handleRegister} className="flex flex-col gap-5 mt-2">
       <div className="mb-4 text-center">
-        <h2 className="text-2xl font-bold text-text mb-2 tracking-tight">Create an account</h2>
-        <p className="text-[14px] text-muted">Enter your information to get started.</p>
+        <h2 className="text-2xl font-bold text-text mb-2 tracking-tight">{t(state?.settings?.language, 'createAnAccount')}</h2>
+        <p className="text-[14px] text-muted">{t(state?.settings?.language, 'enterInfo')}</p>
       </div>
       <div className="flex flex-col gap-2">
-        <label className="text-[13px] font-medium text-text ml-1">Name</label>
+        <label className="text-[13px] font-medium text-text ml-1">{t(state?.settings?.language, 'name')}</label>
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-muted group-focus-within:text-accent transition-colors">
             <User size={18} strokeWidth={2.5} />
           </div>
-          <input required type="text" value={name} onChange={e => setName(e.target.value)} placeholder="John Doe" className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-border border border-border text-text text-sm outline-none focus:border-accent/50 focus:bg-border transition-all placeholder:text-muted shadow-inner" />
+          <input required type="text" value={name} onChange={e => setName(e.target.value)} placeholder="John Doe" className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-border border border-border text-text text-[16px] outline-none focus:border-accent/50 focus:bg-border transition-all placeholder:text-muted shadow-inner" />
         </div>
       </div>
       <div className="flex flex-col gap-2">
-        <label className="text-[13px] font-medium text-text ml-1">Email</label>
+        <label className="text-[13px] font-medium text-text ml-1">{t(state?.settings?.language, 'email')}</label>
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-muted group-focus-within:text-accent transition-colors">
             <Mail size={18} strokeWidth={2.5} />
           </div>
-          <input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="m@example.com" className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-border border border-border text-text text-sm outline-none focus:border-accent/50 focus:bg-border transition-all placeholder:text-muted shadow-inner" />
+          <input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="m@example.com" className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-border border border-border text-text text-[16px] outline-none focus:border-accent/50 focus:bg-border transition-all placeholder:text-muted shadow-inner" />
         </div>
       </div>
       <div className="flex flex-col gap-2">
-        <label className="text-[13px] font-medium text-text ml-1">Password</label>
+        <label className="text-[13px] font-medium text-text ml-1">{t(state?.settings?.language, 'password')}</label>
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-muted group-focus-within:text-accent transition-colors">
             <Lock size={18} strokeWidth={2.5} />
           </div>
-          <input required type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-border border border-border text-text text-sm outline-none focus:border-accent/50 focus:bg-border transition-all placeholder:text-muted shadow-inner" />
+          <input required type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-border border border-border text-text text-[16px] outline-none focus:border-accent/50 focus:bg-border transition-all placeholder:text-muted shadow-inner" />
         </div>
       </div>
-      <button type="submit" className="group flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-accent text-black font-bold text-[15px] mt-4 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(250,204,21,0.2)] hover:shadow-[0_0_25px_rgba(250,204,21,0.4)]">
-        Create account <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+      {error && <p className="text-center text-[13px] text-red-400 -mt-2">{error}</p>}
+      <button type="submit" disabled={submitting} className="group flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-accent text-black font-bold text-[15px] mt-4 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(250,204,21,0.2)] hover:shadow-[0_0_25px_rgba(250,204,21,0.4)] disabled:opacity-60 disabled:pointer-events-none">
+        {submitting ? t(state?.settings?.language, 'creatingAccount') : <>{t(state?.settings?.language, 'createAccount')} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /></>}
       </button>
     </form>
   );
@@ -140,8 +199,8 @@ export default function AuthPage() {
         <div className="w-full max-w-[460px] bg-surface/70 border border-border backdrop-blur-xl rounded-3xl p-6 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,255,255,0.05)]">
           <Tabs
             tabs={[
-              { id: "login", label: "Log in", content: loginContent },
-              { id: "register", label: "Create an account", content: registerContent }
+              { id: "login", label: t(state?.settings?.language, 'logIn'), content: loginContent },
+              { id: "register", label: t(state?.settings?.language, 'signUp'), content: registerContent }
             ]}
           />
         </div>
@@ -174,13 +233,13 @@ export default function AuthPage() {
               <div className="w-14 h-14 rounded-full bg-border flex items-center justify-center mb-4 border border-border">
                 <Frown className="text-accent" size={28} />
               </div>
-              <h3 className="text-xl font-bold text-text mb-2">Uh oh...</h3>
-              <p className="text-muted mb-6 text-sm">Sorry bro, we can't help you.</p>
+              <h3 className="text-xl font-bold text-text mb-2">{t(state?.settings?.language, 'uhOh')}</h3>
+              <p className="text-muted mb-6 text-sm">{t(state?.settings?.language, 'sorryBro')}</p>
               <button 
                 onClick={() => setIsModalOpen(false)}
                 className="w-full py-3 rounded-xl bg-border hover:bg-border text-text font-medium text-sm transition-colors active:scale-[0.98]"
               >
-                Close
+                {t(state?.settings?.language, 'close')}
               </button>
             </motion.div>
           </div>
