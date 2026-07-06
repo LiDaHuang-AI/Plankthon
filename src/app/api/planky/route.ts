@@ -1,9 +1,30 @@
 import { NextResponse } from "next/server";
 import { GEMINI_MODELS } from "@/lib/geminiModels";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
+
+// Public endpoint, no auth required — cap per-IP usage so one visitor (or a
+// script) can't burn through the shared Gemini quota for everyone else.
+const RATE_LIMIT = 15;
+const RATE_WINDOW_SECONDS = 5 * 60;
 
 export async function POST(req: Request) {
   try {
     const { message, history = [], language = 'en' } = await req.json();
+
+    const ip = getClientIp(req);
+    const { allowed, resetSeconds } = await rateLimit(`planky:${ip}`, RATE_LIMIT, RATE_WINDOW_SECONDS);
+    if (!allowed) {
+      const minutes = Math.max(1, Math.ceil(resetSeconds / 60));
+      const limitMsg =
+        language === "th"
+          ? `ส่งข้อความบ่อยเกินไปนะ ลองใหม่อีกครั้งใน ${minutes} นาที 🐡`
+          : `You're sending messages a bit fast. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}. 🐡`;
+      return NextResponse.json(
+        { text: limitMsg },
+        { status: 429, headers: { "Retry-After": String(resetSeconds) } }
+      );
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!message) {
