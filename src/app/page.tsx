@@ -52,23 +52,34 @@ function HeroParticles() {
 }
 
 // Types out `text` character-by-character with a blinking caret, like the
-// antigravity.google hero. Reserves the full text's space up front (invisible
-// copy) so the layout doesn't jump while typing.
+// antigravity.google hero. Starts the first time it scrolls into view (the
+// page scrolls inside a nested container, so the observer root is passed in).
+// Reserves the full text's space up front (invisible copy) so the layout
+// doesn't jump while typing. The caret hides once typing finishes unless
+// `persistentCaret` keeps it blinking (used for the hero's signature line).
 function Typewriter({
   text,
-  startDelay = 900,
-  speed = 65,
+  rootRef,
+  startDelay = 0,
+  speed = 40,
+  persistentCaret = false,
   className,
 }: {
   text: string;
+  rootRef: React.RefObject<HTMLDivElement | null>;
   startDelay?: number;
   speed?: number;
+  persistentCaret?: boolean;
   className?: string;
 }) {
+  const holder = useRef<HTMLSpanElement>(null);
+  const inView = useInView(holder, { once: true, margin: "-40px", root: rootRef });
   const [count, setCount] = useState(0);
   const [started, setStarted] = useState(false);
+  const done = count >= text.length;
 
   useEffect(() => {
+    if (!inView) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setStarted(true);
       setCount(text.length);
@@ -76,27 +87,46 @@ function Typewriter({
     }
     const t = setTimeout(() => setStarted(true), startDelay);
     return () => clearTimeout(t);
-  }, [startDelay, text.length]);
+  }, [inView, startDelay, text.length]);
 
   useEffect(() => {
-    if (!started || count >= text.length) return;
-    const t = setTimeout(() => setCount((c) => c + 1), speed);
+    if (!started || done) return;
+    // Browsers cap timers/renders near one frame (~16ms), so speeds faster
+    // than that are achieved by typing several characters per tick.
+    const step = speed < 16 ? Math.ceil(16 / speed) : 1;
+    const interval = Math.max(speed, 16);
+    const t = setTimeout(() => setCount((c) => Math.min(text.length, c + step)), interval);
     return () => clearTimeout(t);
-  }, [started, count, speed, text.length]);
+  }, [started, count, speed, done, text.length]);
+
+  const showCaret = started && (persistentCaret || !done);
 
   return (
-    <span className="relative inline-block">
+    <span ref={holder} className="relative inline-block">
       <span className="invisible">{text}</span>
       <span className={clsx("absolute inset-0", className)}>
         {text.slice(0, count)}
-        <motion.span
-          animate={{ opacity: [1, 1, 0, 0] }}
-          transition={{ duration: 1, repeat: Infinity, times: [0, 0.5, 0.5, 1] }}
-          className="inline-block w-[4px] h-[0.85em] bg-yellow-400 ml-1.5 rounded-sm align-[-0.05em]"
-        />
+        {showCaret && (
+          <motion.span
+            animate={{ opacity: [1, 1, 0, 0] }}
+            transition={{ duration: 1, repeat: Infinity, times: [0, 0.5, 0.5, 1] }}
+            className="inline-block w-[3px] h-[0.85em] bg-yellow-400 ml-1 rounded-sm align-[-0.05em]"
+          />
+        )}
       </span>
     </span>
   );
+}
+
+// Cumulative start times (ms) for typing several texts one after another.
+function typingSchedule(items: [text: string, speed: number][], gap = 150): number[] {
+  const starts: number[] = [];
+  let t = 0;
+  for (const [text, speed] of items) {
+    starts.push(t);
+    t += text.length * speed + gap;
+  }
+  return starts;
 }
 
 // Scroll-triggered reveal: fade + rise + unblur, antigravity-style. The page
@@ -252,6 +282,73 @@ function TeamCarousel({ rootRef }: { rootRef: React.RefObject<HTMLDivElement | n
   );
 }
 
+// Copy + typing schedules for the typewriter sections. Every visible string
+// types out in sequence; schedules are computed from the real text lengths so
+// each element starts right as the previous one finishes.
+const HERO = {
+  badge: "Learn Python interactively with Planky",
+  l1: "Master Python",
+  l2: "One Line at a Time.",
+  sub: "Interactive, bite-sized lessons and real coding challenges, with Planky, your AI mentor, guiding you at every step.",
+};
+const [heroBadgeAt, heroL1At, heroL2At, heroSubAt] = typingSchedule([
+  [HERO.badge, 14],
+  [HERO.l1, 55],
+  [HERO.l2, 55],
+  [HERO.sub, 8],
+]);
+
+const FEAT_A = {
+  badge: "Guided Curriculum",
+  l1: "Structured Lessons,",
+  l2: "Built to Stick.",
+  para: "Learn through focused, bite-sized chapters instead of long video lectures. Each lesson builds on the last, with interactive exercises and immediate feedback so concepts actually stay.",
+  b1: "Interactive exercises with real-time feedback",
+  b2: "Track progress with XP and badges as you advance",
+};
+const [aBadgeAt, aL1At, aL2At, aParaAt, aB1At, aB2At] = typingSchedule([
+  [FEAT_A.badge, 16],
+  [FEAT_A.l1, 40],
+  [FEAT_A.l2, 40],
+  [FEAT_A.para, 6],
+  [FEAT_A.b1, 9],
+  [FEAT_A.b2, 9],
+]);
+
+const FEAT_B = {
+  badge: "Real Coding Exercises",
+  l1: "Write Real Code.",
+  l2: "Not Just Syntax.",
+  para: "Put your knowledge to the test in a built-in, browser-based coding sandbox. Solve real challenges, debug your own solutions, and get instant guidance from Planky whenever you get stuck.",
+  b1: "Full Pyodide in-browser Python execution",
+  b2: "AI code review and tailored debugging hints",
+};
+const [bBadgeAt, bL1At, bL2At, bParaAt, bB1At, bB2At] = typingSchedule([
+  [FEAT_B.badge, 16],
+  [FEAT_B.l1, 40],
+  [FEAT_B.l2, 40],
+  [FEAT_B.para, 6],
+  [FEAT_B.b1, 9],
+  [FEAT_B.b2, 9],
+]);
+
+const FEAT_C = {
+  badge: "Habit Building",
+  l1: "Build Unstoppable",
+  l2: "Daily Streaks.",
+  para: "Consistency is key to mastering programming. Track your daily streak and review your activity heatmap to build a steady learning habit that lasts.",
+  b1: "Activity heatmap that visualizes your progress",
+  b2: "Daily streaks that keep you accountable",
+};
+const [cBadgeAt, cL1At, cL2At, cParaAt, cB1At, cB2At] = typingSchedule([
+  [FEAT_C.badge, 16],
+  [FEAT_C.l1, 40],
+  [FEAT_C.l2, 40],
+  [FEAT_C.para, 6],
+  [FEAT_C.b1, 9],
+  [FEAT_C.b2, 9],
+]);
+
 function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [userCount, setUserCount] = useState<number | null>(null);
@@ -375,7 +472,7 @@ function LandingPage() {
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-300 text-xs md:text-sm font-semibold mb-6 backdrop-blur-sm"
           >
             <Sparkles className="w-4 h-4" />
-            <span>Learn Python interactively with Planky</span>
+            <Typewriter text={HERO.badge} rootRef={scrollRef} startDelay={heroBadgeAt + 200} speed={14} />
           </motion.div>
 
           <motion.h1
@@ -384,9 +481,14 @@ function LandingPage() {
             transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
             className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tighter leading-[1.02] mb-6 font-sans"
           >
-            Master Python <br className="hidden sm:inline" />
+            <Typewriter text={HERO.l1} rootRef={scrollRef} startDelay={heroL1At + 200} speed={55} />{" "}
+            <br className="hidden sm:inline" />
             <Typewriter
-              text="One Line at a Time."
+              text={HERO.l2}
+              rootRef={scrollRef}
+              startDelay={heroL2At + 200}
+              speed={55}
+              persistentCaret
               className="bg-gradient-to-r from-yellow-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent drop-shadow-[0_8px_40px_rgba(250,204,21,0.35)]"
             />
           </motion.h1>
@@ -397,7 +499,7 @@ function LandingPage() {
             transition={{ duration: 0.9, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="text-lg sm:text-2xl text-gray-300 max-w-2xl mx-auto mb-10 font-normal leading-relaxed"
           >
-            Interactive, bite-sized lessons and real coding challenges, with Planky, your AI mentor, guiding you at every step.
+            <Typewriter text={HERO.sub} rootRef={scrollRef} startDelay={heroSubAt + 200} speed={8} />
           </motion.p>
 
           <motion.div
@@ -455,23 +557,23 @@ function LandingPage() {
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-bold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
-              Guided Curriculum
+              <Typewriter text={FEAT_A.badge} rootRef={scrollRef} startDelay={aBadgeAt} speed={16} />
             </div>
             <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
-              Structured Lessons, <br />
-              <span className="text-yellow-400">Built to Stick.</span>
+              <Typewriter text={FEAT_A.l1} rootRef={scrollRef} startDelay={aL1At} speed={40} /> <br />
+              <Typewriter text={FEAT_A.l2} rootRef={scrollRef} startDelay={aL2At} speed={40} className="text-yellow-400" />
             </h2>
             <p className="text-gray-300 text-lg leading-relaxed">
-              Learn through focused, bite-sized chapters instead of long video lectures. Each lesson builds on the last, with interactive exercises and immediate feedback so concepts actually stay.
+              <Typewriter text={FEAT_A.para} rootRef={scrollRef} startDelay={aParaAt} speed={6} />
             </p>
             <ul className="space-y-3 text-gray-300">
               <li className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full bg-yellow-400/20 flex items-center justify-center text-yellow-400 text-xs">✓</div>
-                <span>Interactive exercises with real-time feedback</span>
+                <Typewriter text={FEAT_A.b1} rootRef={scrollRef} startDelay={aB1At} speed={9} />
               </li>
               <li className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full bg-yellow-400/20 flex items-center justify-center text-yellow-400 text-xs">✓</div>
-                <span>Track progress with XP and badges as you advance</span>
+                <Typewriter text={FEAT_A.b2} rootRef={scrollRef} startDelay={aB2At} speed={9} />
               </li>
             </ul>
           </div>
@@ -512,23 +614,23 @@ function LandingPage() {
           <div className="space-y-6 order-1 lg:order-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-bold uppercase tracking-wider">
               <Code className="w-3.5 h-3.5" />
-              Real Coding Exercises
+              <Typewriter text={FEAT_B.badge} rootRef={scrollRef} startDelay={bBadgeAt} speed={16} />
             </div>
             <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
-              Write Real Code. <br />
-              <span className="text-yellow-400">Not Just Syntax.</span>
+              <Typewriter text={FEAT_B.l1} rootRef={scrollRef} startDelay={bL1At} speed={40} /> <br />
+              <Typewriter text={FEAT_B.l2} rootRef={scrollRef} startDelay={bL2At} speed={40} className="text-yellow-400" />
             </h2>
             <p className="text-gray-300 text-lg leading-relaxed">
-              Put your knowledge to the test in a built-in, browser-based coding sandbox. Solve real challenges, debug your own solutions, and get instant guidance from Planky whenever you get stuck.
+              <Typewriter text={FEAT_B.para} rootRef={scrollRef} startDelay={bParaAt} speed={6} />
             </p>
             <ul className="space-y-3 text-gray-300">
               <li className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full bg-yellow-400/20 flex items-center justify-center text-yellow-400 text-xs">✓</div>
-                <span>Full Pyodide in-browser Python execution</span>
+                <Typewriter text={FEAT_B.b1} rootRef={scrollRef} startDelay={bB1At} speed={9} />
               </li>
               <li className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full bg-yellow-400/20 flex items-center justify-center text-yellow-400 text-xs">✓</div>
-                <span>AI code review and tailored debugging hints</span>
+                <Typewriter text={FEAT_B.b2} rootRef={scrollRef} startDelay={bB2At} speed={9} />
               </li>
             </ul>
           </div>
@@ -545,23 +647,23 @@ function LandingPage() {
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-bold uppercase tracking-wider">
               <Flame className="w-3.5 h-3.5" />
-              Habit Building
+              <Typewriter text={FEAT_C.badge} rootRef={scrollRef} startDelay={cBadgeAt} speed={16} />
             </div>
             <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
-              Build Unstoppable <br />
-              <span className="text-yellow-400">Daily Streaks.</span>
+              <Typewriter text={FEAT_C.l1} rootRef={scrollRef} startDelay={cL1At} speed={40} /> <br />
+              <Typewriter text={FEAT_C.l2} rootRef={scrollRef} startDelay={cL2At} speed={40} className="text-yellow-400" />
             </h2>
             <p className="text-gray-300 text-lg leading-relaxed">
-              Consistency is key to mastering programming. Track your daily streak and review your activity heatmap to build a steady learning habit that lasts.
+              <Typewriter text={FEAT_C.para} rootRef={scrollRef} startDelay={cParaAt} speed={6} />
             </p>
             <ul className="space-y-3 text-gray-300">
               <li className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full bg-yellow-400/20 flex items-center justify-center text-yellow-400 text-xs">✓</div>
-                <span>Activity heatmap that visualizes your progress</span>
+                <Typewriter text={FEAT_C.b1} rootRef={scrollRef} startDelay={cB1At} speed={9} />
               </li>
               <li className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full bg-yellow-400/20 flex items-center justify-center text-yellow-400 text-xs">✓</div>
-                <span>Daily streaks that keep you accountable</span>
+                <Typewriter text={FEAT_C.b2} rootRef={scrollRef} startDelay={cB2At} speed={9} />
               </li>
             </ul>
           </div>

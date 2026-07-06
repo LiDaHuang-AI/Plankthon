@@ -51,14 +51,51 @@ function Chrome({
 // the in-app coding sandbox uses), so visitors can edit the code and actually
 // execute Python — including input() — right on the landing page.
 function LiveEditor() {
-  const [code, setCode] = useState(DEFAULT_CODE);
+  const [code, setCode] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [waitingForInput, setWaitingForInput] = useState(false);
+  const [autoTyping, setAutoTyping] = useState(true);
 
   const { isReady, runCode, submitInput, stop } = usePyodide();
   const runRef = useRef<() => void>(() => {});
+  const cancelAutoTypeRef = useRef<() => void>(() => {});
+
+  // Type the starter code out character-by-character when the editor first
+  // appears (the section copy promises "watch code type out live"). Reset
+  // cancels it; the editor is read-only until typing finishes.
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setCode(DEFAULT_CODE);
+      setAutoTyping(false);
+      return;
+    }
+    let cancelled = false;
+    let i = 0;
+    let t: ReturnType<typeof setTimeout>;
+    const finish = () => {
+      cancelled = true;
+      setCode(DEFAULT_CODE);
+      setAutoTyping(false);
+    };
+    cancelAutoTypeRef.current = finish;
+    const tick = () => {
+      if (cancelled) return;
+      i = Math.min(DEFAULT_CODE.length, i + 2);
+      setCode(DEFAULT_CODE.slice(0, i));
+      if (i < DEFAULT_CODE.length) {
+        t = setTimeout(tick, 20);
+      } else {
+        setAutoTyping(false);
+      }
+    };
+    t = setTimeout(tick, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, []);
 
   const handleRun = async () => {
     if (!isReady || isRunning) return;
@@ -110,7 +147,7 @@ function LiveEditor() {
   const actions = (
     <>
       <button
-        onClick={() => { setCode(DEFAULT_CODE); setLines([]); }}
+        onClick={() => { cancelAutoTypeRef.current(); setCode(DEFAULT_CODE); setLines([]); }}
         className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
       >
         <RotateCcw className="w-3.5 h-3.5" /> Reset
@@ -125,7 +162,7 @@ function LiveEditor() {
       ) : (
         <button
           onClick={handleRun}
-          disabled={!isReady}
+          disabled={!isReady || autoTyping}
           className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-yellow-400 text-black hover:bg-yellow-300 transition-colors disabled:opacity-60"
         >
           <Play className="w-3.5 h-3.5 fill-current" /> {isReady ? "Run" : "Loading..."}
@@ -142,6 +179,7 @@ function LiveEditor() {
           onChange={(v) => setCode(v)}
           height="240px"
           theme={oneDark}
+          readOnly={autoTyping}
           extensions={extensions}
           basicSetup={{ highlightActiveLine: false, autocompletion: true, foldGutter: false }}
         />
@@ -200,9 +238,9 @@ export function TerminalMockup({
         <LiveEditor />
       ) : (
         <Chrome actions={skeletonActions}>
-          <pre className="p-4 text-[13px] font-mono text-gray-300 h-[240px] overflow-hidden whitespace-pre-wrap">
-            {DEFAULT_CODE}
-          </pre>
+          {/* Empty editor area — the live editor types the code out once it
+              activates, so showing the full code here would flash. */}
+          <div className="h-[240px] bg-[#0B0F16]/60" />
           <div className="h-48 border-t border-white/10 bg-[#0B0F16]" />
         </Chrome>
       )}
