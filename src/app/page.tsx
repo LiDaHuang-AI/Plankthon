@@ -3,9 +3,9 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import Image from "next/image";
-import { ArrowDown, Sparkles, Flame, Code, ChevronRight, Globe, Mail, Shield } from "lucide-react";
+import { ArrowDown, Sparkles, Flame, Code, ChevronLeft, ChevronRight, Globe, Mail, Shield, Clock } from "lucide-react";
 import { LazyScene } from "@/components/landing/LazyScene";
 import { TerminalMockup } from "@/components/landing/TerminalMockup";
 import { useAppContext } from "./ClientProvider";
@@ -47,6 +47,207 @@ function HeroParticles() {
           }}
         />
       ))}
+    </div>
+  );
+}
+
+// Types out `text` character-by-character with a blinking caret, like the
+// antigravity.google hero. Reserves the full text's space up front (invisible
+// copy) so the layout doesn't jump while typing.
+function Typewriter({
+  text,
+  startDelay = 900,
+  speed = 65,
+  className,
+}: {
+  text: string;
+  startDelay?: number;
+  speed?: number;
+  className?: string;
+}) {
+  const [count, setCount] = useState(0);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setStarted(true);
+      setCount(text.length);
+      return;
+    }
+    const t = setTimeout(() => setStarted(true), startDelay);
+    return () => clearTimeout(t);
+  }, [startDelay, text.length]);
+
+  useEffect(() => {
+    if (!started || count >= text.length) return;
+    const t = setTimeout(() => setCount((c) => c + 1), speed);
+    return () => clearTimeout(t);
+  }, [started, count, speed, text.length]);
+
+  return (
+    <span className="relative inline-block">
+      <span className="invisible">{text}</span>
+      <span className={clsx("absolute inset-0", className)}>
+        {text.slice(0, count)}
+        <motion.span
+          animate={{ opacity: [1, 1, 0, 0] }}
+          transition={{ duration: 1, repeat: Infinity, times: [0, 0.5, 0.5, 1] }}
+          className="inline-block w-[4px] h-[0.85em] bg-yellow-400 ml-1.5 rounded-sm align-[-0.05em]"
+        />
+      </span>
+    </span>
+  );
+}
+
+// Scroll-triggered reveal: fade + rise + unblur, antigravity-style. The page
+// scrolls inside a nested container, so the observer root must be passed in.
+function Reveal({
+  children,
+  rootRef,
+  delay = 0,
+  className,
+}: {
+  children: React.ReactNode;
+  rootRef: React.RefObject<HTMLDivElement | null>;
+  delay?: number;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 28, filter: "blur(10px)" }}
+      whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      viewport={{ once: true, margin: "-80px", root: rootRef }}
+      transition={{ duration: 0.8, delay, ease: [0.22, 1, 0.36, 1] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// Animates a number from 0 to `target` the first time it scrolls into view.
+function CountUp({
+  target,
+  suffix = "",
+  duration = 1400,
+  rootRef,
+  className,
+}: {
+  target: number;
+  suffix?: string;
+  duration?: number;
+  rootRef: React.RefObject<HTMLDivElement | null>;
+  className?: string;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-40px", root: rootRef });
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    if (!inView) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setValue(target);
+      return;
+    }
+    let start: number | null = null;
+    let raf: number;
+    const step = (t: number) => {
+      if (start === null) start = t;
+      const p = Math.min((t - start) / duration, 1);
+      setValue(Math.round(target * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, target, duration]);
+
+  return (
+    <span ref={ref} className={className}>
+      {value.toLocaleString()}
+      {suffix}
+    </span>
+  );
+}
+
+const TEAM = [
+  { firstName: "นัจกร", fullName: "นางสาวนัจกร อุ่นเสรีภาพ", number: 6, img: "/team/member-1.jpg" },
+  { firstName: "พานุวัฒน์", fullName: "นายพานุวัฒน์ วัฒนชัย", number: 29, img: "/team/member-2.jpg" },
+  { firstName: "สเตฟาน", fullName: "นายสเตฟาน ทองเปลว", number: 31, img: "/team/member-3.jpg" },
+  { firstName: "สุทธิภัทร", fullName: "นายสุทธิภัทร พุตซ้อน", number: 33, img: "/team/member-4.jpg" },
+  { firstName: "อธิคุณ", fullName: "นายอธิคุณ ศิราทอง", number: 34, img: "/team/member-5.jpg" },
+];
+
+// Horizontal snap carousel of big photo cards with prev/next arrows, modeled
+// on the "meet the developers" section of antigravity.google.
+function TeamCarousel({ rootRef }: { rootRef: React.RefObject<HTMLDivElement | null> }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  const scrollByCard = (dir: 1 | -1) => {
+    const el = trackRef.current;
+    if (!el) return;
+    const card = el.querySelector<HTMLElement>("[data-team-card]");
+    const step = card ? card.offsetWidth + 24 : 400;
+    el.scrollBy({ left: dir * step, behavior: "smooth" });
+  };
+
+  return (
+    <div className="relative">
+      <div
+        ref={trackRef}
+        className="no-scrollbar flex gap-6 overflow-x-auto snap-x snap-mandatory pb-2 -mx-6 px-6 sm:mx-0 sm:px-0"
+      >
+        {TEAM.map((m, i) => (
+          <motion.div
+            key={m.number}
+            data-team-card
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px", root: rootRef }}
+            transition={{ duration: 0.7, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }}
+            className="snap-start flex-shrink-0 w-[270px] sm:w-[330px] lg:w-[360px] group text-left"
+          >
+            <div className="relative rounded-3xl overflow-hidden border border-white/10 aspect-[4/5] bg-white/5 shadow-2xl">
+              <Image
+                src={m.img}
+                alt={m.fullName}
+                fill
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                sizes="(max-width: 640px) 270px, 360px"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+              <div className="absolute bottom-5 left-5 right-5">
+                <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-md">
+                  {m.firstName}
+                </div>
+                <div className="text-yellow-300 text-xs font-bold tracking-widest mt-1 uppercase">
+                  เลขที่ {m.number}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 px-1">
+              <div className="text-sm font-semibold text-white">{m.fullName}</div>
+              <div className="text-xs text-gray-400 mt-0.5">Plankthon Team</div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-end gap-3 mt-4">
+        <button
+          onClick={() => scrollByCard(-1)}
+          aria-label="Previous member"
+          className="w-11 h-11 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 hover:border-yellow-400/40 text-white flex items-center justify-center transition-colors active:scale-95"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <button
+          onClick={() => scrollByCard(1)}
+          aria-label="Next member"
+          className="w-11 h-11 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 hover:border-yellow-400/40 text-white flex items-center justify-center transition-colors active:scale-95"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -168,9 +369,9 @@ function LandingPage() {
         {/* Hero Content */}
         <div className="relative z-10 max-w-5xl mx-auto text-center pointer-events-none mt-12 md:mt-0">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            initial={{ opacity: 0, y: 30, filter: "blur(8px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-300 text-xs md:text-sm font-semibold mb-6 backdrop-blur-sm"
           >
             <Sparkles className="w-4 h-4" />
@@ -178,30 +379,31 @@ function LandingPage() {
           </motion.div>
 
           <motion.h1
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
+            initial={{ opacity: 0, y: 40, filter: "blur(10px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
             className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tighter leading-[1.02] mb-6 font-sans"
           >
             Master Python <br className="hidden sm:inline" />
-            <span className="bg-gradient-to-r from-yellow-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent drop-shadow-[0_8px_40px_rgba(250,204,21,0.35)]">
-              One Line at a Time.
-            </span>
+            <Typewriter
+              text="One Line at a Time."
+              className="bg-gradient-to-r from-yellow-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent drop-shadow-[0_8px_40px_rgba(250,204,21,0.35)]"
+            />
           </motion.h1>
 
           <motion.p
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            initial={{ opacity: 0, y: 30, filter: "blur(8px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 0.9, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="text-lg sm:text-2xl text-gray-300 max-w-2xl mx-auto mb-10 font-normal leading-relaxed"
           >
             Interactive, bite-sized lessons and real coding challenges, with Planky, your AI mentor, guiding you at every step.
           </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
+            initial={{ opacity: 0, y: 30, filter: "blur(8px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 0.9, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 pointer-events-auto"
           >
             <Link
@@ -226,12 +428,14 @@ function LandingPage() {
       <section className="w-full border-y border-white/10 bg-[#0E1118]/80 backdrop-blur-md py-10 relative z-10">
         <div className="max-w-2xl mx-auto px-6 grid grid-cols-2 gap-8 text-center">
           <div>
-            <div className="text-3xl lg:text-4xl font-extrabold text-yellow-400 font-mono">100%</div>
+            <div className="text-3xl lg:text-4xl font-extrabold text-yellow-400 font-mono">
+              <CountUp target={100} suffix="%" rootRef={scrollRef} />
+            </div>
             <div className="text-sm text-gray-400 mt-1 font-medium">Runs in your browser</div>
           </div>
           <div>
             <div className="text-3xl lg:text-4xl font-extrabold text-white font-mono">
-              {userCount === null ? "—" : userCount.toLocaleString()}
+              {userCount === null ? "—" : <CountUp target={userCount} rootRef={scrollRef} />}
             </div>
             <div className="text-sm text-gray-400 mt-1 font-medium">Registered learners</div>
           </div>
@@ -242,10 +446,10 @@ function LandingPage() {
       <section id="features" className="max-w-7xl mx-auto px-6 py-32 space-y-32 relative z-10">
         {/* Feature 1: Gamified lessons (Left text, Right mockup) */}
         <motion.div
-          initial={{ opacity: 0, y: 60 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 60, filter: "blur(10px)" }}
+          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           viewport={{ once: true, margin: "-100px", root: scrollRef }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
         >
           <div className="space-y-6">
@@ -287,10 +491,10 @@ function LandingPage() {
 
         {/* Feature 2: Quest/challenge system (Left mockup, Right text) */}
         <motion.div
-          initial={{ opacity: 0, y: 60 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 60, filter: "blur(10px)" }}
+          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           viewport={{ once: true, margin: "-100px", root: scrollRef }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
         >
           {/* App Screenshot: Coding Sandbox — box sizes itself to the image, no cropping */}
@@ -332,10 +536,10 @@ function LandingPage() {
 
         {/* Feature 3: Streak system (Left text, Right mockup) */}
         <motion.div
-          initial={{ opacity: 0, y: 60 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 60, filter: "blur(10px)" }}
+          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           viewport={{ once: true, margin: "-100px", root: scrollRef }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
         >
           <div className="space-y-6">
@@ -379,56 +583,40 @@ function LandingPage() {
       {/* 5. Interactive Code Sample Section */}
       <section id="exercise" className="w-full py-28 bg-[#0E1118] border-t border-white/10 relative z-10 px-6">
         <div className="max-w-5xl mx-auto space-y-12">
-          <div className="text-center space-y-4 max-w-3xl mx-auto">
+          <Reveal rootRef={scrollRef} className="text-center space-y-4 max-w-3xl mx-auto">
             <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
               Test Drive Your First <span className="text-yellow-400">Python Script</span>
             </h2>
             <p className="text-gray-400 text-lg">
               Watch code type out live, or take over the terminal and execute it directly in your browser.
             </p>
-          </div>
+          </Reveal>
 
           <TerminalMockup rootRef={scrollRef} />
         </div>
       </section>
 
-      {/* 6. Testimonial / Social Proof Section (Empty for now) */}
+      {/* 6. Testimonial / Social Proof Section */}
       <section className="max-w-7xl mx-auto px-6 py-28 text-center space-y-8 relative z-10 border-t border-white/5">
-        <div className="space-y-3">
+        <Reveal rootRef={scrollRef} className="space-y-3">
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Loved by Future Developers</h2>
-          <p className="text-gray-400 max-w-xl mx-auto">[TODO: Testimonial & Social proof cards to be added here soon]</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto opacity-50">
-          {[1, 2, 3].map((item) => (
-            <div key={item} className="p-6 rounded-2xl bg-white/5 border border-white/10 min-h-[160px] flex items-center justify-center">
-              <span className="text-sm font-mono text-gray-500">[Placeholder Testimonial Card {item}]</span>
-            </div>
-          ))}
-        </div>
+          <p className="text-gray-400 max-w-xl mx-auto">We&apos;re just getting started — real stories from learners will show up here soon.</p>
+        </Reveal>
+        <Reveal rootRef={scrollRef} delay={0.15}>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-300 text-sm font-semibold">
+            <Clock className="w-4 h-4" />
+            Coming soon
+          </div>
+        </Reveal>
       </section>
 
       {/* 7. Development Team / About Section */}
-      <section id="about" className="max-w-7xl mx-auto px-6 py-24 text-center space-y-12 relative z-10 border-t border-white/5">
-        <div className="space-y-3">
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Meet the Team Behind Plankthon</h2>
+      <section id="about" className="max-w-7xl mx-auto px-6 py-24 relative z-10 border-t border-white/5">
+        <Reveal rootRef={scrollRef} className="text-center space-y-3 mb-12">
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">Meet the Team Behind Plankthon</h2>
           <p className="text-gray-400 max-w-xl mx-auto">Dedicated to making coding accessible, interactive, and joyful for everyone.</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
-          {[1, 2, 3, 4].map((member) => (
-            <div key={member} className="p-6 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center gap-4 hover:border-yellow-400/40 transition-all">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-yellow-400/20 to-white/10 border border-white/10 flex items-center justify-center font-mono text-xl font-bold text-yellow-400">
-                T{member}
-              </div>
-              <div>
-                <h3 className="font-bold text-white">[TODO: Name {member}]</h3>
-                <p className="text-xs text-yellow-400 font-medium mt-0.5">[TODO: Role]</p>
-              </div>
-              <div className="flex items-center gap-3 text-gray-400 text-xs font-mono pt-2 border-t border-white/10 w-full justify-center">
-                <span>[Social Links TODO]</span>
-              </div>
-            </div>
-          ))}
-        </div>
+        </Reveal>
+        <TeamCarousel rootRef={scrollRef} />
       </section>
 
       {/* 8. Full-Screen Final CTA Section */}
@@ -437,15 +625,19 @@ function LandingPage() {
         <LazyScene scale={1.4} rootRef={scrollRef} className="absolute inset-0 w-full h-full pointer-events-auto opacity-70" />
 
         <div className="relative z-10 max-w-4xl mx-auto text-center space-y-8 pointer-events-none">
-          <h2 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-tight">
-            Ready to Dive Into <br />
-            <span className="bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
-              Your Python Journey?
-            </span>
-          </h2>
-          <p className="text-lg sm:text-2xl text-gray-300 max-w-xl mx-auto">
-            No setup and no installation. Create a free account and start writing Python in your browser in under a minute.
-          </p>
+          <Reveal rootRef={scrollRef}>
+            <h2 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-tight">
+              Ready to Dive Into <br />
+              <span className="bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
+                Your Python Journey?
+              </span>
+            </h2>
+          </Reveal>
+          <Reveal rootRef={scrollRef} delay={0.12}>
+            <p className="text-lg sm:text-2xl text-gray-300 max-w-xl mx-auto">
+              No setup and no installation. Create a free account and start writing Python in your browser in under a minute.
+            </p>
+          </Reveal>
           <div className="pt-4 pointer-events-auto">
             <Link
               href="/auth"
