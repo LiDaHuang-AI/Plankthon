@@ -28,9 +28,9 @@ function Chrome({
   children: React.ReactNode;
 }) {
   return (
-    <div className="w-full max-w-4xl mx-auto rounded-2xl overflow-hidden border border-white/10 bg-[#0E1117] shadow-2xl">
+    <div className="w-full max-w-4xl mx-auto rounded-2xl overflow-hidden border border-white/10 hover:border-yellow-400/30 bg-[#0E1117]/95 shadow-[0_25px_70px_rgba(0,0,0,0.9)] transition-all duration-500 backdrop-blur-xl">
       {/* Title bar */}
-      <div className="flex items-center justify-between gap-2 px-3 sm:px-4 py-3 bg-[#161B22] border-b border-white/10">
+      <div className="flex items-center justify-between gap-2 px-3 sm:px-4 py-3 bg-[#161B22]/90 border-b border-white/10">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-3 h-3 rounded-full bg-red-500/80 flex-shrink-0" />
           <div className="w-3 h-3 rounded-full bg-yellow-500/80 flex-shrink-0" />
@@ -66,34 +66,38 @@ function LiveEditor() {
   // appears (the section copy promises "watch code type out live"). Reset
   // cancels it; the editor is read-only until typing finishes.
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setCode(DEFAULT_CODE);
-      setAutoTyping(false);
-      return;
-    }
     let cancelled = false;
-    let i = 0;
-    let t: ReturnType<typeof setTimeout>;
+    let timer: NodeJS.Timeout;
+    const START_DELAY = 400;
+    const MS_PER_CHAR = 12;
     const finish = () => {
       cancelled = true;
+      clearInterval(timer);
       setCode(DEFAULT_CODE);
       setAutoTyping(false);
     };
     cancelAutoTypeRef.current = finish;
-    const tick = () => {
+
+    const timeout = setTimeout(() => {
       if (cancelled) return;
-      i = Math.min(DEFAULT_CODE.length, i + 2);
-      setCode(DEFAULT_CODE.slice(0, i));
-      if (i < DEFAULT_CODE.length) {
-        t = setTimeout(tick, 20);
-      } else {
-        setAutoTyping(false);
-      }
-    };
-    t = setTimeout(tick, 400);
+      let i = 0;
+      timer = setInterval(() => {
+        if (cancelled) return;
+        i += 2;
+        if (i >= DEFAULT_CODE.length) {
+          setCode(DEFAULT_CODE);
+          setAutoTyping(false);
+          clearInterval(timer);
+        } else {
+          setCode(DEFAULT_CODE.slice(0, i));
+        }
+      }, MS_PER_CHAR);
+    }, START_DELAY);
+
     return () => {
       cancelled = true;
-      clearTimeout(t);
+      clearTimeout(timeout);
+      clearInterval(timer);
     };
   }, []);
 
@@ -127,6 +131,27 @@ function LiveEditor() {
   };
   runRef.current = handleRun;
 
+  const handleAutoDemo = () => {
+    cancelAutoTypeRef.current();
+    setLines([]);
+    setAutoTyping(true);
+    setCode("");
+    let i = 0;
+    const timer = setInterval(() => {
+      i += 2;
+      if (i >= DEFAULT_CODE.length) {
+        setCode(DEFAULT_CODE);
+        setAutoTyping(false);
+        clearInterval(timer);
+        setTimeout(() => {
+          runRef.current();
+        }, 300);
+      } else {
+        setCode(DEFAULT_CODE.slice(0, i));
+      }
+    }, 12);
+  };
+
   const handleInputSubmit = (val: string) => {
     setLines((prev) => [...prev, { text: val }]);
     submitInput(val);
@@ -147,6 +172,13 @@ function LiveEditor() {
   const actions = (
     <>
       <button
+        onClick={handleAutoDemo}
+        disabled={autoTyping || isRunning}
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-yellow-400/10 text-yellow-300 hover:bg-yellow-400/20 border border-yellow-400/30 transition-all disabled:opacity-50"
+      >
+        <span>⚡ Auto-Demo</span>
+      </button>
+      <button
         onClick={() => { cancelAutoTypeRef.current(); setCode(DEFAULT_CODE); setLines([]); }}
         className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
       >
@@ -163,7 +195,7 @@ function LiveEditor() {
         <button
           onClick={handleRun}
           disabled={!isReady || autoTyping}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-yellow-400 text-black hover:bg-yellow-300 transition-colors disabled:opacity-60"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-yellow-400 text-black hover:bg-yellow-300 transition-colors disabled:opacity-60 shadow-[0_0_15px_rgba(250,204,21,0.3)] hover:shadow-[0_0_25px_rgba(250,204,21,0.6)]"
         >
           <Play className="w-3.5 h-3.5 fill-current" /> {isReady ? "Run" : "Loading..."}
         </button>

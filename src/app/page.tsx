@@ -8,6 +8,8 @@ import Image from "next/image";
 import { ArrowDown, Sparkles, Flame, Code, ChevronLeft, ChevronRight, Globe, Mail, Shield, Clock } from "lucide-react";
 import { LazyScene } from "@/components/landing/LazyScene";
 import { TerminalMockup } from "@/components/landing/TerminalMockup";
+import { SpotlightCard, ShimmerBadge, ShimmerButton, CyberGrid, AmbientOrbs, ScrollWordReveal } from "@/components/landing/AntigravityEffects";
+import { TeamMotionCarousel } from "@/components/landing/TeamMotionCarousel";
 import { useAppContext } from "./ClientProvider";
 import clsx from "clsx";
 
@@ -51,6 +53,34 @@ function HeroParticles() {
   );
 }
 
+// True once the element has intersected the scroll container. Uses a raw
+// IntersectionObserver per element instead of framer-motion's useInView /
+// whileInView: framer multiplexes one shared observer per root, and its
+// subscriptions can silently drop for some elements (an entire feature
+// section stayed invisible), while a dedicated observer is reliable.
+function useSeenOnce(
+  ref: React.RefObject<Element | null>,
+  rootRef: React.RefObject<HTMLDivElement | null>,
+  margin = "0px"
+) {
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    if (seen || !ref.current) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setSeen(true);
+          io.disconnect();
+        }
+      },
+      { root: rootRef.current || null, rootMargin: margin }
+    );
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, [seen, ref, rootRef, margin]);
+  return seen;
+}
+
 // Types out `text` character-by-character with a blinking caret, like the
 // antigravity.google hero. Starts the first time it scrolls into view (the
 // page scrolls inside a nested container, so the observer root is passed in).
@@ -73,7 +103,7 @@ function Typewriter({
   className?: string;
 }) {
   const holder = useRef<HTMLSpanElement>(null);
-  const inView = useInView(holder, { once: true, margin: "-40px", root: rootRef });
+  const inView = useSeenOnce(holder, rootRef, "-40px");
   const [count, setCount] = useState(0);
   const [started, setStarted] = useState(false);
   const done = count >= text.length;
@@ -85,19 +115,35 @@ function Typewriter({
       setCount(text.length);
       return;
     }
-    const t = setTimeout(() => setStarted(true), startDelay);
-    return () => clearTimeout(t);
-  }, [inView, startDelay, text.length]);
+    let timer: NodeJS.Timeout;
+    let raf: number;
+    let startTime = 0;
 
-  useEffect(() => {
-    if (!started || done) return;
-    // Browsers cap timers/renders near one frame (~16ms), so speeds faster
-    // than that are achieved by typing several characters per tick.
-    const step = speed < 16 ? Math.ceil(16 / speed) : 1;
-    const interval = Math.max(speed, 16);
-    const t = setTimeout(() => setCount((c) => Math.min(text.length, c + step)), interval);
-    return () => clearTimeout(t);
-  }, [started, count, speed, done, text.length]);
+    const startTyping = () => {
+      setStarted(true);
+      startTime = performance.now();
+      const step = (now: number) => {
+        const elapsed = now - startTime;
+        const targetCount = Math.min(Math.floor(elapsed / speed) + 1, text.length);
+        setCount((prev) => (prev !== targetCount ? targetCount : prev));
+        if (targetCount < text.length) {
+          raf = requestAnimationFrame(step);
+        }
+      };
+      raf = requestAnimationFrame(step);
+    };
+
+    if (startDelay > 0) {
+      timer = setTimeout(startTyping, startDelay);
+    } else {
+      startTyping();
+    }
+
+    return () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(raf);
+    };
+  }, [inView, startDelay, speed, text.length]);
 
   const showCaret = started && (persistentCaret || !done);
 
@@ -135,19 +181,25 @@ function Reveal({
   children,
   rootRef,
   delay = 0,
+  y = 35,
+  margin = "-60px",
   className,
 }: {
   children: React.ReactNode;
   rootRef: React.RefObject<HTMLDivElement | null>;
   delay?: number;
+  y?: number;
+  margin?: string;
   className?: string;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const seen = useSeenOnce(ref, rootRef, margin);
   return (
     <motion.div
-      initial={{ opacity: 0, y: 28, filter: "blur(10px)" }}
-      whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      viewport={{ once: true, margin: "-80px", root: rootRef }}
-      transition={{ duration: 0.8, delay, ease: [0.22, 1, 0.36, 1] }}
+      ref={ref}
+      initial={{ opacity: 0, y, scale: 0.98 }}
+      animate={seen ? { opacity: 1, y: 0, scale: 1 } : undefined}
+      transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
       className={className}
     >
       {children}
@@ -170,7 +222,7 @@ function CountUp({
   className?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-40px", root: rootRef });
+  const inView = useSeenOnce(ref, rootRef, "-40px");
   const [value, setValue] = useState(0);
 
   useEffect(() => {
@@ -199,88 +251,6 @@ function CountUp({
   );
 }
 
-const TEAM = [
-  { firstName: "นัจกร", fullName: "นางสาวนัจกร อุ่นเสรีภาพ", number: 6, img: "/team/member-1.jpg" },
-  { firstName: "พานุวัฒน์", fullName: "นายพานุวัฒน์ วัฒนชัย", number: 29, img: "/team/member-2.jpg" },
-  { firstName: "สเตฟาน", fullName: "นายสเตฟาน ทองเปลว", number: 31, img: "/team/member-3.jpg" },
-  { firstName: "สุทธิภัทร", fullName: "นายสุทธิภัทร พุตซ้อน", number: 33, img: "/team/member-4.jpg" },
-  { firstName: "อธิคุณ", fullName: "นายอธิคุณ ศิราทอง", number: 34, img: "/team/member-5.jpg" },
-];
-
-// Horizontal snap carousel of big photo cards with prev/next arrows, modeled
-// on the "meet the developers" section of antigravity.google.
-function TeamCarousel({ rootRef }: { rootRef: React.RefObject<HTMLDivElement | null> }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-
-  const scrollByCard = (dir: 1 | -1) => {
-    const el = trackRef.current;
-    if (!el) return;
-    const card = el.querySelector<HTMLElement>("[data-team-card]");
-    const step = card ? card.offsetWidth + 24 : 400;
-    el.scrollBy({ left: dir * step, behavior: "smooth" });
-  };
-
-  return (
-    <div className="relative">
-      <div
-        ref={trackRef}
-        className="no-scrollbar flex gap-6 overflow-x-auto snap-x snap-mandatory pb-2 -mx-6 px-6 sm:mx-0 sm:px-0"
-      >
-        {TEAM.map((m, i) => (
-          <motion.div
-            key={m.number}
-            data-team-card
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px", root: rootRef }}
-            transition={{ duration: 0.7, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }}
-            className="snap-start flex-shrink-0 w-[270px] sm:w-[330px] lg:w-[360px] group text-left"
-          >
-            <div className="relative rounded-3xl overflow-hidden border border-white/10 aspect-[4/5] bg-white/5 shadow-2xl">
-              <Image
-                src={m.img}
-                alt={m.fullName}
-                fill
-                className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-                sizes="(max-width: 640px) 270px, 360px"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-              <div className="absolute bottom-5 left-5 right-5">
-                <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-md">
-                  {m.firstName}
-                </div>
-                <div className="text-yellow-300 text-xs font-bold tracking-widest mt-1 uppercase">
-                  เลขที่ {m.number}
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 px-1">
-              <div className="text-sm font-semibold text-white">{m.fullName}</div>
-              <div className="text-xs text-gray-400 mt-0.5">Plankthon Team</div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-end gap-3 mt-4">
-        <button
-          onClick={() => scrollByCard(-1)}
-          aria-label="Previous member"
-          className="w-11 h-11 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 hover:border-yellow-400/40 text-white flex items-center justify-center transition-colors active:scale-95"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => scrollByCard(1)}
-          aria-label="Next member"
-          className="w-11 h-11 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 hover:border-yellow-400/40 text-white flex items-center justify-center transition-colors active:scale-95"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // Copy + typing schedules for the typewriter sections. Every visible string
 // types out in sequence; schedules are computed from the real text lengths so
@@ -409,77 +379,83 @@ function LandingPage() {
       ref={scrollRef}
       className="h-full w-full overflow-y-auto overflow-x-hidden relative bg-[#0A0D14] text-gray-100 font-sans selection:bg-yellow-500 selection:text-black"
     >
-      {/* 1. Floating Transparent/Blurred Navbar */}
-      <header
-        className={clsx(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-6 lg:px-12 py-4 flex items-center justify-between",
-          scrolled
-            ? "bg-[#0A0D14]/80 backdrop-blur-md border-b border-white/10 py-3 shadow-lg"
-            : "bg-transparent"
-        )}
-      >
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-full bg-yellow-400 flex items-center justify-center shadow-[0_0_15px_rgba(250,204,21,0.3)] group-hover:scale-105 transition-transform">
-            <svg viewBox="0 0 100 100" className="w-6 h-6">
-              <path d="M 35 35 L 50 50 L 35 65" fill="transparent" stroke="#171717" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
-              <line x1="55" y1="65" x2="70" y2="65" stroke="#171717" strokeWidth="8" strokeLinecap="round" />
-            </svg>
-          </div>
-          <span className="font-extrabold text-xl tracking-tight text-white group-hover:text-yellow-400 transition-colors">
-            Plankthon
-          </span>
-        </Link>
+      <CyberGrid />
+      <AmbientOrbs />
 
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
-          <a href="#features" onClick={scrollToSection("features")} className="hover:text-yellow-400 transition-colors">Features</a>
-          <a href="#exercise" onClick={scrollToSection("exercise")} className="hover:text-yellow-400 transition-colors">Interactive IDE</a>
-          <a href="#about" onClick={scrollToSection("about")} className="hover:text-yellow-400 transition-colors">Team</a>
-        </nav>
-
-        <Link
-          href="/auth"
-          className="px-5 py-2.5 rounded-full bg-yellow-400 text-black font-semibold text-sm hover:bg-yellow-300 transition-all hover:shadow-[0_0_20px_rgba(250,204,21,0.5)] active:scale-95"
+      {/* 1. Floating Glass Capsule Navbar */}
+      <div className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
+        <header
+          className={clsx(
+            "pointer-events-auto transition-all duration-500 flex items-center justify-between gap-6 sm:gap-12 px-6 py-3 rounded-full border shadow-2xl backdrop-blur-xl",
+            scrolled
+              ? "bg-[#0E1118]/85 border-yellow-400/30 shadow-[0_10px_35px_rgba(0,0,0,0.8)] scale-100"
+              : "bg-[#0E1118]/60 border-white/10 shadow-[0_10px_25px_rgba(0,0,0,0.5)] scale-[0.99]"
+          )}
         >
-          Start learning free
-        </Link>
-      </header>
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center shadow-[0_0_15px_rgba(250,204,21,0.4)] group-hover:scale-110 transition-transform">
+              <svg viewBox="0 0 100 100" className="w-5 h-5">
+                <path d="M 35 35 L 50 50 L 35 65" fill="transparent" stroke="#171717" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+                <line x1="55" y1="65" x2="70" y2="65" stroke="#171717" strokeWidth="8" strokeLinecap="round" />
+              </svg>
+            </div>
+            <span className="font-extrabold text-lg tracking-tight text-white group-hover:text-yellow-400 transition-colors">
+              Plankthon
+            </span>
+          </Link>
+
+          <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-gray-300">
+            <a href="#features" onClick={scrollToSection("features")} className="hover:text-yellow-400 px-3 py-1 rounded-full hover:bg-white/5 transition-all">Features</a>
+            <a href="#exercise" onClick={scrollToSection("exercise")} className="hover:text-yellow-400 px-3 py-1 rounded-full hover:bg-white/5 transition-all">Interactive IDE</a>
+            <a href="#about" onClick={scrollToSection("about")} className="hover:text-yellow-400 px-3 py-1 rounded-full hover:bg-white/5 transition-all">Team</a>
+          </nav>
+
+          <Link
+            href="/auth"
+            className="px-5 py-2 rounded-full bg-gradient-to-r from-yellow-400 to-amber-400 text-black font-bold text-xs sm:text-sm hover:from-yellow-300 hover:to-amber-300 transition-all hover:shadow-[0_0_20px_rgba(250,204,21,0.6)] active:scale-95"
+          >
+            Start learning free
+          </Link>
+        </header>
+      </div>
 
       {/* 2. Full-Screen Hero Section */}
       <section className="relative w-full min-h-screen flex flex-col items-center justify-center px-6 pt-20 pb-16 overflow-hidden">
-        {/* Soft focal glow to anchor the hero */}
+        {/* Soft cosmic focal glow to anchor the hero */}
         <div
           aria-hidden
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] max-w-[130vw] max-h-[130vw] rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(250,204,21,0.10) 0%, rgba(250,204,21,0.03) 35%, transparent 70%)" }}
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[1100px] h-[1100px] max-w-[140vw] max-h-[140vw] rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle at 50% 45%, rgba(250,204,21,0.18) 0%, rgba(56,189,248,0.08) 35%, rgba(168,85,247,0.03) 65%, transparent 80%)" }}
         />
 
         {/* Drifting particle field */}
         <HeroParticles />
 
-        {/* 3D logo — smaller and softer so it frames the text instead of covering it */}
+        {/* 3D logo — massive and impressive per user request */}
         <LazyScene
-          scale={0.68}
+          scale={1.45}
           rootRef={scrollRef}
-          className="absolute inset-0 w-full h-full pointer-events-auto opacity-80"
+          className="absolute inset-0 w-full h-full pointer-events-auto opacity-90"
         />
 
         {/* Hero Content */}
         <div className="relative z-10 max-w-5xl mx-auto text-center pointer-events-none mt-12 md:mt-0">
           <motion.div
-            initial={{ opacity: 0, y: 30, filter: "blur(8px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-300 text-xs md:text-sm font-semibold mb-6 backdrop-blur-sm"
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="inline-block"
           >
-            <Sparkles className="w-4 h-4" />
-            <Typewriter text={HERO.badge} rootRef={scrollRef} startDelay={heroBadgeAt + 200} speed={14} />
+            <ShimmerBadge icon={<Sparkles className="w-4 h-4 text-yellow-400" />}>
+              <Typewriter text={HERO.badge} rootRef={scrollRef} startDelay={heroBadgeAt + 200} speed={14} />
+            </ShimmerBadge>
           </motion.div>
 
           <motion.h1
-            initial={{ opacity: 0, y: 40, filter: "blur(10px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tighter leading-[1.02] mb-6 font-sans"
+            initial={{ opacity: 0, y: 25, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tighter leading-[1.02] mb-6 font-sans drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)]"
           >
             <Typewriter text={HERO.l1} rootRef={scrollRef} startDelay={heroL1At + 200} speed={55} />{" "}
             <br className="hidden sm:inline" />
@@ -489,36 +465,33 @@ function LandingPage() {
               startDelay={heroL2At + 200}
               speed={55}
               persistentCaret
-              className="bg-gradient-to-r from-yellow-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent drop-shadow-[0_8px_40px_rgba(250,204,21,0.35)]"
+              className="bg-gradient-to-r from-yellow-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent drop-shadow-[0_8px_50px_rgba(250,204,21,0.4)]"
             />
           </motion.h1>
 
           <motion.p
-            initial={{ opacity: 0, y: 30, filter: "blur(8px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.9, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="text-lg sm:text-2xl text-gray-300 max-w-2xl mx-auto mb-10 font-normal leading-relaxed"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="text-lg sm:text-2xl text-gray-300 max-w-2xl mx-auto mb-10 font-normal leading-relaxed drop-shadow-md"
           >
             <Typewriter text={HERO.sub} rootRef={scrollRef} startDelay={heroSubAt + 200} speed={8} />
           </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, y: 30, filter: "blur(8px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.9, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 pointer-events-auto"
           >
-            <Link
-              href="/auth"
-              className="w-full sm:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-yellow-400 to-amber-400 text-black font-extrabold text-base sm:text-lg hover:from-yellow-300 hover:to-amber-300 transition-all shadow-[0_0_30px_rgba(250,204,21,0.4)] hover:shadow-[0_0_45px_rgba(250,204,21,0.6)] hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
-            >
+            <ShimmerButton href="/auth" className="w-full sm:w-auto">
               <span>Start Learning Free</span>
-              <ChevronRight className="w-5 h-5 stroke-[3]" />
-            </Link>
+              <ChevronRight className="w-5 h-5 stroke-[3] group-hover:translate-x-1 transition-transform" />
+            </ShimmerButton>
             <a
               href="#features"
               onClick={scrollToSection("features")}
-              className="w-full sm:w-auto px-8 py-4 rounded-full bg-white/5 hover:bg-white/10 text-white font-semibold text-base sm:text-lg border border-white/10 transition-all backdrop-blur-sm flex items-center justify-center"
+              className="w-full sm:w-auto px-8 py-4 rounded-full bg-white/5 hover:bg-white/10 text-white font-semibold text-base sm:text-lg border border-white/10 hover:border-yellow-400/40 transition-all duration-300 backdrop-blur-md flex items-center justify-center hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-10px_rgba(250,204,21,0.2)]"
             >
               Explore Curriculum
             </a>
@@ -527,37 +500,48 @@ function LandingPage() {
       </section>
 
       {/* 3. Stat Bar / Logo Bar */}
-      <section className="w-full border-y border-white/10 bg-[#0E1118]/80 backdrop-blur-md py-10 relative z-10">
-        <div className="max-w-2xl mx-auto px-6 grid grid-cols-2 gap-8 text-center">
-          <div>
-            <div className="text-3xl lg:text-4xl font-extrabold text-yellow-400 font-mono">
+      <section className="w-full py-12 relative z-10">
+        <div className="max-w-4xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <SpotlightCard className="p-6 text-center shadow-xl hover:shadow-[0_15px_40px_rgba(250,204,21,0.15)] transition-all duration-500 hover:-translate-y-1">
+            <div className="text-4xl font-black text-yellow-400 font-mono drop-shadow-[0_0_15px_rgba(250,204,21,0.4)]">
               <CountUp target={100} suffix="%" rootRef={scrollRef} />
             </div>
-            <div className="text-sm text-gray-400 mt-1 font-medium">Runs in your browser</div>
-          </div>
-          <div>
-            <div className="text-3xl lg:text-4xl font-extrabold text-white font-mono">
+            <div className="text-sm text-gray-300 mt-2 font-semibold">Runs in browser</div>
+            <div className="text-xs text-gray-500 mt-0.5">Zero installation needed</div>
+          </SpotlightCard>
+
+          <SpotlightCard className="p-6 text-center shadow-xl hover:shadow-[0_15px_40px_rgba(56,189,248,0.15)] transition-all duration-500 hover:-translate-y-1">
+            <div className="text-4xl font-black text-cyan-400 font-mono drop-shadow-[0_0_15px_rgba(56,189,248,0.4)]">
+              0 sec
+            </div>
+            <div className="text-sm text-gray-300 mt-2 font-semibold">Setup latency</div>
+            <div className="text-xs text-gray-500 mt-0.5">Start coding instantly</div>
+          </SpotlightCard>
+
+          <SpotlightCard className="p-6 text-center shadow-xl hover:shadow-[0_15px_40px_rgba(168,85,247,0.15)] transition-all duration-500 hover:-translate-y-1">
+            <div className="text-4xl font-black text-purple-400 font-mono drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]">
               {userCount === null ? "—" : <CountUp target={userCount} rootRef={scrollRef} />}
             </div>
-            <div className="text-sm text-gray-400 mt-1 font-medium">Registered learners</div>
-          </div>
+            <div className="text-sm text-gray-300 mt-2 font-semibold">Registered learners</div>
+            <div className="text-xs text-gray-500 mt-0.5">Growing community</div>
+          </SpotlightCard>
         </div>
       </section>
 
       {/* 4. Feature Showcase Sections */}
       <section id="features" className="max-w-7xl mx-auto px-6 py-32 space-y-32 relative z-10">
         {/* Feature 1: Gamified lessons (Left text, Right mockup) */}
-        <motion.div
-          initial={{ opacity: 0, y: 60, filter: "blur(10px)" }}
-          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          viewport={{ once: true, margin: "-100px", root: scrollRef }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        <Reveal
+          rootRef={scrollRef}
+          y={60}
+          margin="-100px"
           className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
         >
           <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-bold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" />
-              <Typewriter text={FEAT_A.badge} rootRef={scrollRef} startDelay={aBadgeAt} speed={16} />
+            <div className="inline-block">
+              <ShimmerBadge icon={<Sparkles className="w-3.5 h-3.5" />}>
+                <Typewriter text={FEAT_A.badge} rootRef={scrollRef} startDelay={aBadgeAt} speed={16} />
+              </ShimmerBadge>
             </div>
             <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
               <Typewriter text={FEAT_A.l1} rootRef={scrollRef} startDelay={aL1At} speed={40} /> <br />
@@ -577,44 +561,48 @@ function LandingPage() {
               </li>
             </ul>
           </div>
-          {/* App Screenshot: Lesson UI — box sizes itself to the image, no cropping */}
-          <div className="w-full rounded-3xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 p-2 shadow-2xl relative group overflow-hidden">
-            <div className="absolute inset-0 bg-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none" />
-            <Image
-              src="/screenshots/lessons-v2.png"
-              alt="Plankthon lesson screen showing an interactive Python exercise"
-              width={1040}
-              height={900}
-              className="w-full h-auto rounded-2xl"
-              sizes="(max-width: 1024px) 100vw, 50vw"
-            />
-          </div>
-        </motion.div>
+          {/* App Screenshot: Lesson UI */}
+          <SpotlightCard className="w-full shadow-2xl hover:shadow-[0_25px_60px_-15px_rgba(250,204,21,0.25)] transition-all duration-700 hover:-translate-y-2">
+            <div className="w-full relative group overflow-hidden rounded-2xl">
+              <div className="absolute inset-0 bg-gradient-to-tr from-yellow-500/10 via-transparent to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 z-10 pointer-events-none" />
+              <Image
+                src="/screenshots/lessons-v2.png"
+                alt="Plankthon lesson screen showing an interactive Python exercise"
+                width={1040}
+                height={900}
+                className="w-full h-auto rounded-2xl transition-transform duration-700 group-hover:scale-[1.01]"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
+            </div>
+          </SpotlightCard>
+        </Reveal>
 
         {/* Feature 2: Quest/challenge system (Left mockup, Right text) */}
-        <motion.div
-          initial={{ opacity: 0, y: 60, filter: "blur(10px)" }}
-          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          viewport={{ once: true, margin: "-100px", root: scrollRef }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        <Reveal
+          rootRef={scrollRef}
+          y={60}
+          margin="-100px"
           className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
         >
-          {/* App Screenshot: Coding Sandbox — box sizes itself to the image, no cropping */}
-          <div className="w-full rounded-3xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 p-2 shadow-2xl relative group overflow-hidden order-2 lg:order-1">
-            <div className="absolute inset-0 bg-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none" />
-            <Image
-              src="/screenshots/coding-v2.png"
-              alt="Plankthon browser-based Python coding sandbox with live output"
-              width={640}
-              height={730}
-              className="w-full h-auto rounded-2xl"
-              sizes="(max-width: 1024px) 100vw, 50vw"
-            />
-          </div>
+          {/* App Screenshot: Coding Sandbox */}
+          <SpotlightCard className="w-full shadow-2xl hover:shadow-[0_25px_60px_-15px_rgba(250,204,21,0.25)] transition-all duration-700 hover:-translate-y-2 order-2 lg:order-1">
+            <div className="w-full relative group overflow-hidden rounded-2xl">
+              <div className="absolute inset-0 bg-gradient-to-tr from-yellow-500/10 via-transparent to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 z-10 pointer-events-none" />
+              <Image
+                src="/screenshots/coding-v2.png"
+                alt="Plankthon browser-based Python coding sandbox with live output"
+                width={640}
+                height={730}
+                className="w-full h-auto rounded-2xl transition-transform duration-700 group-hover:scale-[1.01]"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
+            </div>
+          </SpotlightCard>
           <div className="space-y-6 order-1 lg:order-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-bold uppercase tracking-wider">
-              <Code className="w-3.5 h-3.5" />
-              <Typewriter text={FEAT_B.badge} rootRef={scrollRef} startDelay={bBadgeAt} speed={16} />
+            <div className="inline-block">
+              <ShimmerBadge icon={<Code className="w-3.5 h-3.5" />}>
+                <Typewriter text={FEAT_B.badge} rootRef={scrollRef} startDelay={bBadgeAt} speed={16} />
+              </ShimmerBadge>
             </div>
             <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
               <Typewriter text={FEAT_B.l1} rootRef={scrollRef} startDelay={bL1At} speed={40} /> <br />
@@ -634,20 +622,20 @@ function LandingPage() {
               </li>
             </ul>
           </div>
-        </motion.div>
+        </Reveal>
 
         {/* Feature 3: Streak system (Left text, Right mockup) */}
-        <motion.div
-          initial={{ opacity: 0, y: 60, filter: "blur(10px)" }}
-          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          viewport={{ once: true, margin: "-100px", root: scrollRef }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        <Reveal
+          rootRef={scrollRef}
+          y={60}
+          margin="-100px"
           className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
         >
           <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-bold uppercase tracking-wider">
-              <Flame className="w-3.5 h-3.5" />
-              <Typewriter text={FEAT_C.badge} rootRef={scrollRef} startDelay={cBadgeAt} speed={16} />
+            <div className="inline-block">
+              <ShimmerBadge icon={<Flame className="w-3.5 h-3.5" />}>
+                <Typewriter text={FEAT_C.badge} rootRef={scrollRef} startDelay={cBadgeAt} speed={16} />
+              </ShimmerBadge>
             </div>
             <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
               <Typewriter text={FEAT_C.l1} rootRef={scrollRef} startDelay={cL1At} speed={40} /> <br />
@@ -667,19 +655,21 @@ function LandingPage() {
               </li>
             </ul>
           </div>
-          {/* App Screenshot: Streak Dashboard — box sizes itself to the image, no cropping */}
-          <div className="w-full rounded-3xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 p-2 shadow-2xl relative group overflow-hidden">
-            <div className="absolute inset-0 bg-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none" />
-            <Image
-              src="/screenshots/streak-v2.png"
-              alt="Plankthon home dashboard showing daily streaks and an activity heatmap"
-              width={740}
-              height={441}
-              className="w-full h-auto rounded-2xl"
-              sizes="(max-width: 1024px) 100vw, 50vw"
-            />
-          </div>
-        </motion.div>
+          {/* App Screenshot: Streak Dashboard */}
+          <SpotlightCard className="w-full shadow-2xl hover:shadow-[0_25px_60px_-15px_rgba(250,204,21,0.25)] transition-all duration-700 hover:-translate-y-2">
+            <div className="w-full relative group overflow-hidden rounded-2xl">
+              <div className="absolute inset-0 bg-gradient-to-tr from-yellow-500/10 via-transparent to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 z-10 pointer-events-none" />
+              <Image
+                src="/screenshots/streak-v2.png"
+                alt="Plankthon home dashboard showing daily streaks and an activity heatmap"
+                width={740}
+                height={441}
+                className="w-full h-auto rounded-2xl transition-transform duration-700 group-hover:scale-[1.01]"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
+            </div>
+          </SpotlightCard>
+        </Reveal>
       </section>
 
       {/* 5. Interactive Code Sample Section */}
@@ -687,27 +677,37 @@ function LandingPage() {
         <div className="max-w-5xl mx-auto space-y-12">
           <Reveal rootRef={scrollRef} className="text-center space-y-4 max-w-3xl mx-auto">
             <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
-              Test Drive Your First <span className="text-yellow-400">Python Script</span>
+              <Typewriter text="Test Drive Your First" rootRef={scrollRef} speed={35} />{" "}
+              <Typewriter text="Python Script" rootRef={scrollRef} startDelay={700} speed={40} className="text-yellow-400" />
             </h2>
             <p className="text-gray-400 text-lg">
-              Watch code type out live, or take over the terminal and execute it directly in your browser.
+              <Typewriter text="Watch code type out live, or take over the terminal and execute it directly in your browser." rootRef={scrollRef} startDelay={1200} speed={10} />
             </p>
           </Reveal>
 
-          <TerminalMockup rootRef={scrollRef} />
+          <SpotlightCard className="w-full shadow-2xl">
+            <div className="relative">
+              <TerminalMockup rootRef={scrollRef} />
+            </div>
+          </SpotlightCard>
         </div>
       </section>
 
       {/* 6. Testimonial / Social Proof Section */}
       <section className="max-w-7xl mx-auto px-6 py-28 text-center space-y-8 relative z-10 border-t border-white/5">
         <Reveal rootRef={scrollRef} className="space-y-3">
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Loved by Future Developers</h2>
-          <p className="text-gray-400 max-w-xl mx-auto">We&apos;re just getting started — real stories from learners will show up here soon.</p>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            <Typewriter text="Loved by Future Developers" rootRef={scrollRef} speed={40} />
+          </h2>
+          <p className="text-gray-400 max-w-xl mx-auto">
+            <Typewriter text="We're just getting started — real stories from learners will show up here soon." rootRef={scrollRef} startDelay={800} speed={12} />
+          </p>
         </Reveal>
         <Reveal rootRef={scrollRef} delay={0.15}>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-300 text-sm font-semibold">
-            <Clock className="w-4 h-4" />
-            Coming soon
+          <div className="inline-block">
+            <ShimmerBadge icon={<Clock className="w-4 h-4" />}>
+              Coming soon
+            </ShimmerBadge>
           </div>
         </Reveal>
       </section>
@@ -715,10 +715,14 @@ function LandingPage() {
       {/* 7. Development Team / About Section */}
       <section id="about" className="max-w-7xl mx-auto px-6 py-24 relative z-10 border-t border-white/5">
         <Reveal rootRef={scrollRef} className="text-center space-y-3 mb-12">
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">Meet the Team Behind Plankthon</h2>
-          <p className="text-gray-400 max-w-xl mx-auto">Dedicated to making coding accessible, interactive, and joyful for everyone.</p>
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
+            <Typewriter text="Meet the Team Behind Plankthon" rootRef={scrollRef} speed={40} />
+          </h2>
+          <p className="text-gray-400 max-w-xl mx-auto">
+            <Typewriter text="Dedicated to making coding accessible, interactive, and joyful for everyone." rootRef={scrollRef} startDelay={1000} speed={12} />
+          </p>
         </Reveal>
-        <TeamCarousel rootRef={scrollRef} />
+        <TeamMotionCarousel />
       </section>
 
       {/* 8. Full-Screen Final CTA Section */}
@@ -729,25 +733,26 @@ function LandingPage() {
         <div className="relative z-10 max-w-4xl mx-auto text-center space-y-8 pointer-events-none">
           <Reveal rootRef={scrollRef}>
             <h2 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-tight">
-              Ready to Dive Into <br />
-              <span className="bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
-                Your Python Journey?
-              </span>
+              <Typewriter text="Ready to Dive Into" rootRef={scrollRef} speed={45} /> <br />
+              <Typewriter
+                text="Your Python Journey?"
+                rootRef={scrollRef}
+                startDelay={800}
+                speed={45}
+                className="bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent"
+              />
             </h2>
           </Reveal>
           <Reveal rootRef={scrollRef} delay={0.12}>
             <p className="text-lg sm:text-2xl text-gray-300 max-w-xl mx-auto">
-              No setup and no installation. Create a free account and start writing Python in your browser in under a minute.
+              <Typewriter text="No setup and no installation. Create a free account and start writing Python in your browser in under a minute." rootRef={scrollRef} startDelay={1600} speed={10} />
             </p>
           </Reveal>
           <div className="pt-4 pointer-events-auto">
-            <Link
-              href="/auth"
-              className="inline-flex items-center gap-3 px-10 py-5 rounded-full bg-gradient-to-r from-yellow-400 to-amber-400 text-black font-black text-lg sm:text-xl hover:from-yellow-300 hover:to-amber-300 transition-all shadow-[0_0_40px_rgba(250,204,21,0.5)] hover:shadow-[0_0_60px_rgba(250,204,21,0.8)] hover:-translate-y-1 active:translate-y-0"
-            >
+            <ShimmerButton href="/auth">
               <span>Start Learning Free</span>
               <ChevronRight className="w-6 h-6 stroke-[3]" />
-            </Link>
+            </ShimmerButton>
           </div>
         </div>
       </section>
@@ -789,6 +794,20 @@ function LandingPage() {
           © {new Date().getFullYear()} Plankthon. All rights reserved.
         </div>
       </footer>
+
+      {/* 10. Floating Glowing Back-to-Top Orb */}
+      <button
+        onClick={() => {
+          scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        aria-label="Back to top"
+        className={clsx(
+          "fixed bottom-8 right-8 z-50 w-14 h-14 rounded-full bg-gradient-to-tr from-yellow-400 via-amber-400 to-yellow-300 text-black shadow-[0_0_30px_rgba(250,204,21,0.6)] hover:shadow-[0_0_50px_rgba(250,204,21,0.9)] transition-all duration-500 flex items-center justify-center hover:scale-110 active:scale-95 group",
+          scrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-12 pointer-events-none"
+        )}
+      >
+        <ArrowDown className="w-6 h-6 stroke-[3] rotate-180 group-hover:-translate-y-0.5 transition-transform" />
+      </button>
     </div>
   );
 }
