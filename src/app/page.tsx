@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
 import Image from "next/image";
-import { ArrowDown, Sparkles, Flame, Code, ChevronLeft, ChevronRight, Globe, Mail, Shield, Clock } from "lucide-react";
+import { ArrowDown, Sparkles, Flame, Code, ChevronLeft, ChevronRight, Globe, Mail, Shield } from "lucide-react";
 import { LazyScene } from "@/components/landing/LazyScene";
 import { TerminalMockup } from "@/components/landing/TerminalMockup";
 import { SpotlightCard, ShimmerBadge, ShimmerButton, CyberGrid, AmbientOrbs, ScrollWordReveal } from "@/components/landing/AntigravityEffects";
@@ -464,7 +464,6 @@ function LandingPage() {
               rootRef={scrollRef}
               startDelay={heroL2At + 200}
               speed={55}
-              persistentCaret
               className="bg-gradient-to-r from-yellow-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent drop-shadow-[0_8px_50px_rgba(250,204,21,0.4)]"
             />
           </motion.h1>
@@ -501,26 +500,18 @@ function LandingPage() {
 
       {/* 3. Stat Bar / Logo Bar */}
       <section className="w-full py-12 relative z-10">
-        <div className="max-w-4xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="max-w-2xl mx-auto px-6 grid grid-cols-2 gap-6">
           <SpotlightCard className="p-6 text-center shadow-xl hover:shadow-[0_15px_40px_rgba(250,204,21,0.15)] transition-all duration-500 hover:-translate-y-1">
             <div className="text-4xl font-black text-yellow-400 font-mono drop-shadow-[0_0_15px_rgba(250,204,21,0.4)]">
-              <CountUp target={100} suffix="%" rootRef={scrollRef} />
+              <CountUp target={100} suffix="%" duration={2600} rootRef={scrollRef} />
             </div>
             <div className="text-sm text-gray-300 mt-2 font-semibold">Runs in browser</div>
             <div className="text-xs text-gray-500 mt-0.5">Zero installation needed</div>
           </SpotlightCard>
 
-          <SpotlightCard className="p-6 text-center shadow-xl hover:shadow-[0_15px_40px_rgba(56,189,248,0.15)] transition-all duration-500 hover:-translate-y-1">
-            <div className="text-4xl font-black text-cyan-400 font-mono drop-shadow-[0_0_15px_rgba(56,189,248,0.4)]">
-              0 sec
-            </div>
-            <div className="text-sm text-gray-300 mt-2 font-semibold">Setup latency</div>
-            <div className="text-xs text-gray-500 mt-0.5">Start coding instantly</div>
-          </SpotlightCard>
-
           <SpotlightCard className="p-6 text-center shadow-xl hover:shadow-[0_15px_40px_rgba(168,85,247,0.15)] transition-all duration-500 hover:-translate-y-1">
             <div className="text-4xl font-black text-purple-400 font-mono drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]">
-              {userCount === null ? "—" : <CountUp target={userCount} rootRef={scrollRef} />}
+              {userCount === null ? "—" : <CountUp target={userCount} duration={2600} rootRef={scrollRef} />}
             </div>
             <div className="text-sm text-gray-300 mt-2 font-semibold">Registered learners</div>
             <div className="text-xs text-gray-500 mt-0.5">Growing community</div>
@@ -693,24 +684,6 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* 6. Testimonial / Social Proof Section */}
-      <section className="max-w-7xl mx-auto px-6 py-28 text-center space-y-8 relative z-10 border-t border-white/5">
-        <Reveal rootRef={scrollRef} className="space-y-3">
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            <Typewriter text="Loved by Future Developers" rootRef={scrollRef} speed={40} />
-          </h2>
-          <p className="text-gray-400 max-w-xl mx-auto">
-            <Typewriter text="We're just getting started — real stories from learners will show up here soon." rootRef={scrollRef} startDelay={800} speed={12} />
-          </p>
-        </Reveal>
-        <Reveal rootRef={scrollRef} delay={0.15}>
-          <div className="inline-block">
-            <ShimmerBadge icon={<Clock className="w-4 h-4" />}>
-              Coming soon
-            </ShimmerBadge>
-          </div>
-        </Reveal>
-      </section>
 
       {/* 7. Development Team / About Section */}
       <section id="about" className="max-w-7xl mx-auto px-6 py-24 relative z-10 border-t border-white/5">

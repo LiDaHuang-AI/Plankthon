@@ -127,30 +127,16 @@ export const member_${member.number}: TeamMember = {
                   sizes="(max-width: 640px) 260px, 350px"
                   priority={isCenter}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-                {/* Click to view code prompt badge for center card */}
+                {/* Click to view code prompt badge for center card — the only
+                    overlay on the card; full member info lives in the modal. */}
                 {isCenter && (
-                  <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md border border-yellow-400/40 text-yellow-300 text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg animate-pulse">
+                  <div className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md border border-yellow-400/40 text-yellow-300 text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg animate-pulse whitespace-nowrap">
                     <Code className="w-3.5 h-3.5" />
                     <span>กดเพื่อดูโค้ดรายละเอียด</span>
                   </div>
                 )}
-
-                <div className="absolute bottom-5 left-5 right-5 z-10 text-left">
-                  <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-md group-hover:text-yellow-300 transition-colors">
-                    {member.firstName}
-                  </div>
-                  <div className="text-yellow-300 text-xs font-bold tracking-widest mt-1 uppercase">
-                    เลขที่ {member.number}
-                  </div>
-                  <div className="text-sm font-medium text-gray-200 mt-2 truncate">
-                    {member.fullName}
-                  </div>
-                  <div className="inline-block mt-1.5 px-2.5 py-0.5 rounded-md bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 text-xs font-semibold">
-                    {member.role}
-                  </div>
-                </div>
               </motion.div>
             );
           })}
