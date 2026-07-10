@@ -149,13 +149,13 @@ function LogoMark({ scale = 1 }: { scale?: number }) {
     >
       {/* 1. Golden Inner Shockwave Ring */}
       <mesh ref={ring1Ref} visible={false} rotation={[0, 0, 0]}>
-        <ringGeometry args={[1.7, 2.0, 64]} />
+        <ringGeometry args={[1.7, 2.0, 48]} />
         <meshBasicMaterial color="#FACC15" transparent opacity={0} side={THREE.DoubleSide} />
       </mesh>
 
       {/* 2. Cyan Outer Energy Ring */}
       <mesh ref={ring2Ref} visible={false} rotation={[0, 0, 0]}>
-        <ringGeometry args={[2.0, 2.2, 64]} />
+        <ringGeometry args={[2.0, 2.2, 48]} />
         <meshBasicMaterial color="#38BDF8" transparent opacity={0} side={THREE.DoubleSide} />
       </mesh>
 
@@ -170,7 +170,7 @@ function LogoMark({ scale = 1 }: { scale?: number }) {
       <Float speed={2.5} rotationIntensity={0.3} floatIntensity={1.2}>
         {/* Coin / disc */}
         <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[1.6, 1.6, 0.4, 128]} />
+          <cylinderGeometry args={[1.6, 1.6, 0.4, 64]} />
           <meshStandardMaterial
             color="#FACC15"
             roughness={0.2}
@@ -194,7 +194,7 @@ export function Scene({ className, scale = 1 }: { className?: string; scale?: nu
   return (
     <div className={className || "w-full h-full absolute inset-0 pointer-events-none z-0 overflow-hidden"}>
       <Canvas
-        dpr={[1, 1.5]}
+        dpr={1}
         performance={{ min: 0.5 }}
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance", precision: "mediump" }}
       >
@@ -210,8 +210,8 @@ export function Scene({ className, scale = 1 }: { className?: string; scale?: nu
         <LogoMark scale={scale} />
 
         {/* Floating background particles (2 depth layers) */}
-        <Sparkles count={50} scale={14} size={3.5} speed={0.5} opacity={0.7} color="#FACC15" />
-        <Sparkles count={30} scale={18} size={2} speed={0.3} opacity={0.4} color="#38BDF8" />
+        <Sparkles count={26} scale={14} size={3.5} speed={0.5} opacity={0.7} color="#FACC15" />
+        <Sparkles count={16} scale={18} size={2} speed={0.3} opacity={0.4} color="#38BDF8" />
       </Canvas>
     </div>
   );

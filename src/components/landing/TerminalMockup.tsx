@@ -58,7 +58,10 @@ function LiveEditor() {
   const [waitingForInput, setWaitingForInput] = useState(false);
   const [autoTyping, setAutoTyping] = useState(true);
 
-  const { isReady, runCode, submitInput, stop } = usePyodide();
+  // Lazy: the Python runtime (tens of MB) only loads on the first Run, so
+  // simply scrolling past this demo doesn't pull in Pyodide.
+  const { isReady, runCode, submitInput, stop, ensureReady } = usePyodide({ lazy: true });
+  const [booting, setBooting] = useState(false);
   const runRef = useRef<() => void>(() => {});
   const cancelAutoTypeRef = useRef<() => void>(() => {});
 
@@ -102,7 +105,19 @@ function LiveEditor() {
   }, []);
 
   const handleRun = async () => {
-    if (!isReady || isRunning) return;
+    if (isRunning || booting) return;
+    // First click loads Pyodide; show a booting state until it's warm.
+    if (!isReady) {
+      setBooting(true);
+      setLines([{ text: "Loading Python runtime…", type: "command" }]);
+      try {
+        await ensureReady();
+      } catch {
+        setBooting(false);
+        return;
+      }
+      setBooting(false);
+    }
     setIsRunning(true);
     setIsTyping(true);
     setWaitingForInput(false);
@@ -194,10 +209,10 @@ function LiveEditor() {
       ) : (
         <button
           onClick={handleRun}
-          disabled={!isReady || autoTyping}
+          disabled={autoTyping || booting}
           className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-yellow-400 text-black hover:bg-yellow-300 transition-colors disabled:opacity-60 shadow-[0_0_15px_rgba(250,204,21,0.3)] hover:shadow-[0_0_25px_rgba(250,204,21,0.6)]"
         >
-          <Play className="w-3.5 h-3.5 fill-current" /> {isReady ? "Run" : "Loading..."}
+          <Play className="w-3.5 h-3.5 fill-current" /> {booting ? "Loading…" : "Run"}
         </button>
       )}
     </>

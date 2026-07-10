@@ -1,11 +1,22 @@
 // Pyodide Client hook
 import { useEffect, useRef, useState, useCallback } from "react";
 
-export function usePyodide() {
+// `lazy` defers spinning up the Pyodide worker (a full CPython WASM runtime,
+// tens of MB of memory) until code is first run/formatted/linted. The landing
+// page uses this so merely scrolling past the demo editor doesn't load Python;
+// in-app pages keep the default eager init so the runtime is warm by the time
+// the user presses Run.
+export function usePyodide({ lazy = false }: { lazy?: boolean } = {}) {
   const [isReady, setIsReady] = useState(false);
   const workerRef = useRef<Worker | null>(null);
   const bufferRef = useRef<SharedArrayBuffer | null>(null);
   const pendingRef = useRef<{ reject: (e: any) => void; handler: (e: MessageEvent) => void } | null>(null);
+  const readyResolversRef = useRef<(() => void)[]>([]);
+  // Mirrors isReady in a ref so ensureReady() can read the *current* readiness
+  // synchronously — the state closure is stale until the next render, which
+  // otherwise deadlocks a second ensureReady() call awaiting an already-fired
+  // READY message.
+  const readyRef = useRef(false);
 
   const initWorker = useCallback(() => {
     const w = new Worker("/worker.js");
@@ -17,26 +28,42 @@ export function usePyodide() {
     }
 
     w.onmessage = (e) => {
-      if (e.data.type === "READY") setIsReady(true);
+      if (e.data.type === "READY") {
+        readyRef.current = true;
+        setIsReady(true);
+        readyResolversRef.current.forEach((r) => r());
+        readyResolversRef.current = [];
+      }
     };
 
     w.postMessage({ type: "INIT", id: "init" });
     workerRef.current = w;
   }, []);
 
+  // Ensure the worker exists and Pyodide has finished loading, initializing it
+  // on demand for lazy mode. Resolves immediately if already ready.
+  const ensureReady = useCallback((): Promise<void> => {
+    if (workerRef.current && readyRef.current) return Promise.resolve();
+    if (!workerRef.current) initWorker();
+    return new Promise((resolve) => {
+      readyResolversRef.current.push(resolve);
+    });
+  }, [initWorker]);
+
   useEffect(() => {
-    initWorker();
+    if (!lazy) initWorker();
     return () => {
       workerRef.current?.terminate();
     };
-  }, [initWorker]);
+  }, [initWorker, lazy]);
 
-  const runCode = (
+  const runCode = async (
     code: string,
     files?: { name: string; content: string }[],
     onStdout?: (text: string) => void,
     onInput?: () => void
   ): Promise<string> => {
+    await ensureReady();
     return new Promise((resolve, reject) => {
       if (!workerRef.current) {
         reject(new Error("Worker not initialized"));
@@ -86,6 +113,7 @@ export function usePyodide() {
     }
     workerRef.current?.terminate();
     workerRef.current = null;
+    readyRef.current = false;
     setIsReady(false);
     initWorker();
   }, [initWorker]);
@@ -147,5 +175,5 @@ export function usePyodide() {
     });
   };
 
-  return { isReady, runCode, submitInput, stop, format, lint };
+  return { isReady, runCode, submitInput, stop, format, lint, ensureReady };
 }

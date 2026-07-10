@@ -700,8 +700,14 @@ function LandingPage() {
 
       {/* 8. Full-Screen Final CTA Section */}
       <section className="relative w-full min-h-[90vh] flex flex-col items-center justify-center px-6 py-32 overflow-hidden border-t border-white/10 bg-[#07090E]">
-        {/* Secondary 3D Scene in Background */}
-        <LazyScene scale={1.4} rootRef={scrollRef} className="absolute inset-0 w-full h-full pointer-events-auto opacity-70" />
+        {/* Lightweight CSS atmosphere (no second WebGL context, to keep memory
+            low). A soft focal glow plus a drifting particle field. */}
+        <div
+          aria-hidden
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] max-w-[130vw] max-h-[130vw] rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle at 50% 50%, rgba(250,204,21,0.14) 0%, rgba(56,189,248,0.06) 40%, transparent 72%)" }}
+        />
+        <HeroParticles />
 
         <div className="relative z-10 max-w-4xl mx-auto text-center space-y-8 pointer-events-none">
           <Reveal rootRef={scrollRef}>
