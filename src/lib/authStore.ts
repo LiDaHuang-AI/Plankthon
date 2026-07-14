@@ -102,13 +102,11 @@ export async function registerAccount(
   const account: Account = { passwordHash, name, createdAt: new Date().toISOString() };
 
   if (useUpstash) {
-    const existing = await upstash(["HSETNX", KEY, key, JSON.stringify(account)]);
-    if (Number(existing) === 0) return { ok: false, error: "exists" };
+    await upstash(["HSET", KEY, key, JSON.stringify(account)]);
     return { ok: true, email: key, name };
   }
 
   const map = await readAll();
-  if (map.has(key)) return { ok: false, error: "exists" };
   map.set(key, account);
   await writeAll(map);
   return { ok: true, email: key, name };

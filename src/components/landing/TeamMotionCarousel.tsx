@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Copy, Check, Terminal, X, Code, Sparkles } from "lucide-react";
@@ -23,16 +23,24 @@ const TEAM: TeamMember[] = [
 
 export function TeamMotionCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [prevActiveIndex, setPrevActiveIndex] = useState(0);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const nextSlide = () => {
-    setActiveIndex((prev) => (prev + 1) % TEAM.length);
-  };
+  const changeSlide = useCallback((newIndexFn: (prev: number) => number) => {
+    setActiveIndex((prev) => {
+      setPrevActiveIndex(prev);
+      return newIndexFn(prev);
+    });
+  }, []);
 
-  const prevSlide = () => {
-    setActiveIndex((prev) => (prev - 1 + TEAM.length) % TEAM.length);
-  };
+  const nextSlide = useCallback(() => {
+    changeSlide((prev) => (prev + 1) % TEAM.length);
+  }, [changeSlide]);
+
+  const prevSlide = useCallback(() => {
+    changeSlide((prev) => (prev - 1 + TEAM.length) % TEAM.length);
+  }, [changeSlide]);
 
   const handleCopyCode = (member: TeamMember) => {
     const codeString = `// 👥 Meet the Team Behind Plankthon
@@ -61,8 +69,6 @@ export const member_${member.number}: TeamMember = {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedMember, nextSlide, prevSlide]);
 
-  const prevOffsetsRef = useRef<Record<number, number>>({});
-
   return (
     <div className="relative w-full py-8">
       {/* Motion Carousel Track */}
@@ -74,9 +80,11 @@ export const member_${member.number}: TeamMember = {
             if (offset < -Math.floor(TEAM.length / 2)) offset += TEAM.length;
             if (offset > Math.floor(TEAM.length / 2)) offset -= TEAM.length;
 
-            const prevOffset = prevOffsetsRef.current[member.number] ?? offset;
+            let prevOffset = idx - prevActiveIndex;
+            if (prevOffset < -Math.floor(TEAM.length / 2)) prevOffset += TEAM.length;
+            if (prevOffset > Math.floor(TEAM.length / 2)) prevOffset -= TEAM.length;
+
             const isWrapping = Math.abs(offset - prevOffset) > 1;
-            prevOffsetsRef.current[member.number] = offset;
 
             const isCenter = offset === 0;
             const isVisible = Math.abs(offset) <= 2;
@@ -90,7 +98,7 @@ export const member_${member.number}: TeamMember = {
                   if (isCenter) {
                     setSelectedMember(member);
                   } else {
-                    setActiveIndex(idx);
+                    changeSlide(() => idx);
                   }
                 }}
                 initial={false}
@@ -247,7 +255,7 @@ export const member_${member.number}: TeamMember = {
                   {/* Syntax Highlighted Code Block */}
                   <div className="flex-1 flex flex-col space-y-1 text-gray-300">
                     <div>
-                      <span className="text-gray-500 italic">// 👥 Meet the Team Behind Plankthon</span>
+                      <span className="text-gray-500 italic">{"// 👥 Meet the Team Behind Plankthon"}</span>
                     </div>
                     <div>
                       <span className="text-purple-400 font-bold">import</span>{" "}

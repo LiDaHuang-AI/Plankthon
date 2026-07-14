@@ -3,31 +3,36 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion, useInView } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
-import { ArrowDown, Sparkles, Flame, Code, ChevronLeft, ChevronRight, Globe, Mail, Shield } from "lucide-react";
+import { ArrowDown, Sparkles, Flame, Code, ChevronRight, Globe, Mail, Shield } from "lucide-react";
 import { LazyScene } from "@/components/landing/LazyScene";
 import { TerminalMockup } from "@/components/landing/TerminalMockup";
-import { SpotlightCard, ShimmerBadge, ShimmerButton, CyberGrid, AmbientOrbs, ScrollWordReveal } from "@/components/landing/AntigravityEffects";
+import { SpotlightCard, ShimmerBadge, ShimmerButton, CyberGrid, AmbientOrbs } from "@/components/landing/AntigravityEffects";
 import { TeamMotionCarousel } from "@/components/landing/TeamMotionCarousel";
 import { useAppContext } from "./ClientProvider";
 import clsx from "clsx";
 
 // Subtle drifting particle field for the hero — soft yellow/amber/white dots
 // that gently float and twinkle, adding depth without competing with the text.
+function pseudoRandom(seed: number): number {
+  const x = Math.sin(seed * 9999.1234) * 10000;
+  return x - Math.floor(x);
+}
+
 function HeroParticles() {
   const dots = React.useMemo(
     () =>
       Array.from({ length: 44 }, (_, i) => {
         const palette = ["250,204,21", "251,191,36", "255,255,255"];
         return {
-          left: Math.random() * 100,
-          top: Math.random() * 100,
-          size: Math.random() * 2.5 + 1.5,
-          alpha: Math.random() * 0.4 + 0.2,
-          color: palette[i % 4 === 0 ? 2 : Math.random() > 0.5 ? 1 : 0],
-          delay: Math.random() * 8,
-          dur: Math.random() * 6 + 7,
+          left: pseudoRandom(i * 10 + 1) * 100,
+          top: pseudoRandom(i * 10 + 2) * 100,
+          size: pseudoRandom(i * 10 + 3) * 2.5 + 1.5,
+          alpha: pseudoRandom(i * 10 + 4) * 0.4 + 0.2,
+          color: palette[i % 4 === 0 ? 2 : pseudoRandom(i * 10 + 5) > 0.5 ? 1 : 0],
+          delay: pseudoRandom(i * 10 + 6) * 8,
+          dur: pseudoRandom(i * 10 + 7) * 6 + 7,
         };
       }),
     []
@@ -111,8 +116,10 @@ function Typewriter({
   useEffect(() => {
     if (!inView) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setStarted(true);
-      setCount(text.length);
+      queueMicrotask(() => {
+        setStarted(true);
+        setCount(text.length);
+      });
       return;
     }
     let timer: NodeJS.Timeout;
@@ -228,7 +235,7 @@ function CountUp({
   useEffect(() => {
     if (!inView) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setValue(target);
+      queueMicrotask(() => setValue(target));
       return;
     }
     let start: number | null = null;

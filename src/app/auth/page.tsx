@@ -87,7 +87,15 @@ export default function AuthPage() {
         ...prev,
         loggedIn: true,
         account: { email: data.email },
-        profile: { name: data.name || "New User", handle, avatar: "" }
+        profile: { name: data.name || "New User", handle, avatar: "" },
+        progress: {
+          unlocked: ["ch1-basic"],
+          lessonsCompleted: [],
+          challengesSolved: [],
+          accuracy: 100,
+          currentChapter: 1,
+          activityLog: [],
+        },
       }));
       router.push("/home");
     } catch {

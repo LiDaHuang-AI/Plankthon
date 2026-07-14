@@ -49,12 +49,18 @@ describe("authStore", () => {
     expect(login).toEqual({ ok: false, error: "invalid" });
   });
 
-  it("rejects a second registration with the same email", async () => {
-    const email = unique("dupe");
+  it("overwrites an existing account when registering with the same email", async () => {
+    const email = unique("overwrite");
     await registerAccount(email, "first-password", "Ada");
 
     const second = await registerAccount(email, "second-password", "Bea");
-    expect(second).toEqual({ ok: false, error: "exists" });
+    expect(second).toEqual({ ok: true, email: email.toLowerCase(), name: "Bea" });
+
+    const oldLogin = await verifyAccount(email, "first-password");
+    expect(oldLogin).toEqual({ ok: false, error: "invalid" });
+
+    const newLogin = await verifyAccount(email, "second-password");
+    expect(newLogin).toEqual({ ok: true, email: email.toLowerCase(), name: "Bea" });
   });
 
   it("treats emails as case-insensitive and trims whitespace", async () => {
